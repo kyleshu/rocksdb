@@ -22,6 +22,9 @@ MACHINE ?= $(shell uname -m)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
+LIBS = -lerpc -lpthread -lnuma -ldl
+LDFLAGS += ~/git/dRaid/src/rpcRaid/bdev_raid_rpc.so -L ~/git/eRPC/build -lerpc
+
 # Transform parallel LOG output into something more readable.
 perl_command = perl -n \
   -e '@a=split("\t",$$_,-1); $$t=$$a[8];'				\
@@ -250,6 +253,7 @@ LDFLAGS += -lrados
 endif
 
 AM_LINK = $(AM_V_CCLD)$(CXX) -L. $(patsubst lib%.a, -l%, $(patsubst lib%.$(PLATFORM_SHARED_EXT), -l%, $^)) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
+AM_CPY = $(AM_V_CCLD)$(CXX) -L. $(patsubst lib%.a, -l%, $(patsubst lib%.$(PLATFORM_SHARED_EXT), -l%, $^)) $(EXEC_LDFLAGS) -o $@ $(LDFLAGS) $(COVERAGEFLAGS)
 AM_SHARE = $(AM_V_CCLD) $(CXX) $(PLATFORM_SHARED_LDFLAGS)$@ -L. $(patsubst lib%.$(PLATFORM_SHARED_EXT), -l%, $^) $(LDFLAGS) -o $@
 
 include $(SPDK_ROOT_DIR)/lib/rocksdb/spdk.rocksdb.mk
@@ -438,10 +442,11 @@ ifeq ($(PLATFORM), OS_OPENBSD)
 	WARNING_FLAGS += -Wno-unused-lambda-capture
 endif
 
+define DISABLE_WARNING_AS_ERROR
 ifndef DISABLE_WARNING_AS_ERROR
 	WARNING_FLAGS += -Werror
 endif
-
+endef
 
 ifdef LUA_PATH
 
@@ -829,7 +834,9 @@ $(SHARED3): $(SHARED4)
 
 endif   # PLATFORM_SHARED_VERSIONED
 $(SHARED4): $(LIB_OBJECTS)
-	$(AM_V_CCLD) $(CXX) $(PLATFORM_SHARED_LDFLAGS)$(SHARED3) $(LIB_OBJECTS) $(LDFLAGS) -o $@
+#	@echo " $(AM_V_CCLD) $(CXX) $(PLATFORM_SHARED_LDFLAGS)$(SHARED3) $(LIB_OBJECTS) $(LDFLAGS) $(SPDK_LIB_LINKER_ARGS) $(ENV_LINKER_ARGS) $(SYS_LIBS) -o $@"
+	@echo "libs $(LIB_OBJECTS)"
+	$(AM_V_CCLD) $(CXX) $(PLATFORM_SHARED_LDFLAGS)$(SHARED3) $(LIB_OBJECTS) $(LDFLAGS) $(SPDK_LIB_LINKER_ARGS) $(ENV_LINKER_ARGS) $(SYS_LIBS) -o $@
 endif  # PLATFORM_SHARED_EXT
 
 .PHONY: blackbox_crash_test check clean coverage crash_test ldb_tests package \

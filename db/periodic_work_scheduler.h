@@ -8,7 +8,7 @@
 #ifndef ROCKSDB_LITE
 
 #include "db/db_impl/db_impl.h"
-#include "util/timer.h"
+#include "../util/timer.h"
 
 namespace ROCKSDB_NAMESPACE {
 

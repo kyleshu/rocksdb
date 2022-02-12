@@ -39,7 +39,7 @@ int main(const int argc, const char *argv[]){
 	if(is_load == 1){
 		write_options.sync = false;
 		write_options.disableWAL = true;
-		options.error_if_exists = true;
+		options.error_if_exists = false;
 		options.create_if_missing = true;
 	}else{
 		options.error_if_exists = false;
@@ -48,9 +48,11 @@ int main(const int argc, const char *argv[]){
 	options.statistics = rocksdb::CreateDBStatistics();
 	options.max_total_wal_size =  1 * (1ull << 30); // wal size
 	options.write_buffer_size = 1 * (1ull << 30);   // write buffer size
-	std::string db = "/root/data";
-	std::string spdk_name = "/root/git/dRaid/src/rocksdb/rocksdb.json";
+	std::string db = "/users/kyleshu/data";
+	std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";
 	std::string spdk_bdev = "Nvme0n1";
+	// std::string spdk_name = "/users/kyleshu/git/dRaid/raid_config/raid5.json";
+	// std::string spdk_bdev = "Raid0";
 	auto env = rocksdb::NewSpdkEnv(rocksdb::Env::Default(), db, spdk_name, spdk_bdev, 4096);
 	options.env = env;
 	/*options.auto_config = true;

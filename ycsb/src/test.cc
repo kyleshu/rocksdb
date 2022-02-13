@@ -23,6 +23,8 @@ int main(const int argc, const char *argv[]){
 	const int is_load = stoi(props.GetProperty("is_load"));
 	const std::string dbname = props.GetProperty("dbname");
 	const std::string db_bak = props.GetProperty("db_bak");
+        const std::string config_path = props.GetProperty("config_path");
+        const std::string bdev_name = props.GetProperty("bdev_name");
 
 	//===================common-setting==========
 	rocksdb::Options options;
@@ -48,11 +50,12 @@ int main(const int argc, const char *argv[]){
 	options.statistics = rocksdb::CreateDBStatistics();
 	options.max_total_wal_size =  1 * (1ull << 30); // wal size
 	options.write_buffer_size = 1 * (1ull << 30);   // write buffer size
-	std::string db = "/users/kyleshu/data";
-	std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";
-	std::string spdk_bdev = "Nvme0n1";
-	// std::string spdk_name = "/users/kyleshu/git/dRaid/raid_config/raid5.json";
-	// std::string spdk_bdev = "Raid0";
+	std::string db = data_dir; //"/users/kyleshu/data";
+
+	// std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";
+	// std::string spdk_bdev = "Nvme0n1";
+	std::string spdk_name = config_path; //"/users/kyleshu/git/dRaid/raid_config/raid5.json";
+	std::string spdk_bdev = bdev_name; //"Raid0";
 	auto env = rocksdb::NewSpdkEnv(rocksdb::Env::Default(), db, spdk_name, spdk_bdev, 4096);
 	options.env = env;
 	/*options.auto_config = true;
@@ -162,6 +165,8 @@ void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
 	props.SetProperty("is_load", argv[5]);
 	props.SetProperty("dbname", argv[6]);
 	props.SetProperty("db_bak", argv[7]);
+        props.SetProperty("config_path", argv[8]);
+        props.SetProperty("bdev_name", argv[9]);
 }
 
 void PrintWorkload(const char* filename){

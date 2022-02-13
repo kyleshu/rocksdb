@@ -23,7 +23,7 @@ ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
 LIBS = -lerpc -lpthread -lnuma -ldl
-LDFLAGS += /users/kyleshu/git/dRaid/src/rpcRaid/bdev_raid_rpc.so -L /users/kyleshu/git/eRPC/build -lerpc
+LDFLAGS += /users/kyleshu/git/dRaid/src/rpcDRaid/bdev_raid_rpc.so -L /users/kyleshu/git/eRPC/build -lerpc
 
 # Transform parallel LOG output into something more readable.
 perl_command = perl -n \

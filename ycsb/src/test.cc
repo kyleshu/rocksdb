@@ -145,7 +145,7 @@ int main(const int argc, const char *argv[]){
 }
 
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
-	if(argc != 8){
+	if(argc != 10){
 		printf("usage: <workload_file> <client_num> <data_dir> <log_dir> <is_load> <dbname> <db_bak>\n");
 		exit(0);
 	}

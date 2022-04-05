@@ -131,10 +131,10 @@ int main(const int argc, const char *argv[]){
 		fflush(stdout);
 		if(is_load == 1){
 			rocksdb_client.Load();
-			std::this_thread::sleep_for(std::chrono::seconds(180));
-		}else{
+			std::this_thread::sleep_for(std::chrono::seconds(30));
 			rocksdb_client.Warmup();
 			rocksdb_client.Work();
+		}else{
 		}
 	}
 /*	if(dbname == "spandb"){

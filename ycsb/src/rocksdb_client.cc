@@ -31,7 +31,7 @@ void RocksDBClient::Load(){
 	PrintArgs();
 	printf("Load %ld requests in %.3lf seconds.\n", load_num_, time/1000/1000);
 	printf("==================================================================\n");
-	std::this_thread::sleep_for(std::chrono::seconds(180));
+	std::this_thread::sleep_for(std::chrono::seconds(30));
 	std::string stat_str2;
  	db_->GetProperty("rocksdb.stats", &stat_str2);
  	printf("\n%s\n", stat_str2.c_str());

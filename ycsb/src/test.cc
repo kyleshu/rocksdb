@@ -92,12 +92,14 @@ int main(const int argc, const char *argv[]){
 
 	if(is_load == 0 || is_load == 1){
 		printf("empty the existing data folder\n");
-		system(("rm " + data_dir + "/*").c_str());
+		for(int i = 0; i < num_instance; ++i)
+			system(("rm " + data_dir + "/instance" + std::to_string(i) + "/*").c_str());
 	}
 	
 	if(dbname == "rocksdb"){
 		printf("empty the existing log folder\n");
-		system(("rm " + log_dir + "/*").c_str());
+		for(int i = 0; i < num_instance; ++i)
+			system(("rm " + log_dir + "/instance" + std::to_string(i) + "/*").c_str());
 	}
 	if(is_load == 0){
 		printf("loading database from %s to %s \n", db_bak.c_str(), data_dir.c_str());
@@ -139,9 +141,9 @@ int main(const int argc, const char *argv[]){
 */
 	pthread_t client_thread[num_instance];
 	for(int i = 0; i < num_instance; ++i) {
-		rocksdb::Options instanc_options(options);
-		instanc_options.wal_dir = log_dir + "/instance" + std::to_string(i);
-		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
+		rocksdb::Options instance_options(options);
+		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
+		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load);
 		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
 	}

@@ -228,11 +228,12 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 			if(time > 1000) {
 				if(t<10) {
 					printf("long time: %lf, now: %lf\n", time, TIME_NOW);
-					t++;
 				}
+				t++;
 			}
 			total_read_latency.fetch_add((uint64_t)time);
 			read_finished.fetch_add(1);
+			if(t%1000 == 0) printf("long time: %d, all: %d\n", t, read_finished);
 		}else if(opt == UPDATE || opt == INSERT || opt == READMODIFYWRITE){
 			update_time.Insert(time);
 			total_write_latency.fetch_add((uint64_t)time);

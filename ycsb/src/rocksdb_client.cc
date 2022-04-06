@@ -195,6 +195,7 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 		auto start = TIME_NOW;
 		if(opt == READ){
 			// db_->Get(read_options_, req->Key(), &r_value);
+			read_options_.io_timeout = std::chrono::microseconds(1000);
 			ERR(db_->Get(read_options_, req->Key(), &r_value));
 		}else if(opt == UPDATE){
 			ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));

@@ -10,14 +10,6 @@ void PrintWorkload(const char* filename);
 void* run_test(void* args) {
 	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
 		{
-		system("sync;echo 3 > /proc/sys/vm/drop_caches");
-		fflush(stdout);
-		printf("--------------memory usage----------------\n");
-		fflush(stdout);
-		system("free -h");
-		fflush(stdout);
-		printf("------------------------------------------\n");
-		fflush(stdout);
 		if(rocksdb_client->id_ == 0) {
 			rocksdb_client->Load();
 			std::this_thread::sleep_for(std::chrono::seconds(30));
@@ -142,10 +134,19 @@ int main(const int argc, const char *argv[]){
 	}
 */
 	pthread_t client_thread[num_instance];
+	system("sync;echo 3 > /proc/sys/vm/drop_caches");
+	fflush(stdout);
+	printf("--------------memory usage----------------\n");
+	fflush(stdout);
+	system("free -h");
+	fflush(stdout);
+	printf("------------------------------------------\n");
+	fflush(stdout);
 	for(int i = 0; i < num_instance; ++i) {
 		rocksdb::Options instance_options(options);
+		ycsbc::WorkloadProxy instance_wp(wp);
 		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
-		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
+		auto rocksdb_client = new ycsbc::RocksDBClient(&instance_wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load, i);
 		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
 	}

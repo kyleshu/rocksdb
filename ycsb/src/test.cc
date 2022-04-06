@@ -144,7 +144,7 @@ int main(const int argc, const char *argv[]){
 		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
 	}
 	for(int i = 0; i < num_instance; ++i) {
-		pthread_join(client_thread[i]);
+		pthread_join(client_thread[i], NULL);
 	}
 /*	if(dbname == "spandb"){
 		delete options.lo_env;

@@ -52,8 +52,8 @@ int main(const int argc, const char *argv[]){
 	write_options.sync = true;
 	write_options.disableWAL = false;
 	if(is_load == 1){
-		write_options.sync = false;
-		write_options.disableWAL = true;
+		// write_options.sync = false;
+		// write_options.disableWAL = true;
 		options.error_if_exists = false;
 		options.create_if_missing = true;
 	}else{
@@ -144,7 +144,9 @@ int main(const int argc, const char *argv[]){
 	fflush(stdout);
 	for(int i = 0; i < num_instance; ++i) {
 		rocksdb::Options instance_options(options);
-		ycsbc::WorkloadProxy instance_wp(wp);
+		ycsbc::CoreWorkload instance_wl;
+		instance_wl.Init(props);
+		ycsbc::WorkloadProxy instance_wp(&instance_wl);
 		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
 		auto rocksdb_client = new ycsbc::RocksDBClient(&instance_wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load, i);

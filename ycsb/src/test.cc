@@ -20,8 +20,10 @@ void* run_test(void* args) {
 		fflush(stdout);
 		rocksdb_client->Load();
 		std::this_thread::sleep_for(std::chrono::seconds(30));
-		rocksdb_client->Warmup();
-		rocksdb_client->Work();
+		if(rocksdb_client->id_ == 0) {
+			rocksdb_client->Warmup();
+			rocksdb_client->Work();
+		}
 	}
 }
 
@@ -144,7 +146,7 @@ int main(const int argc, const char *argv[]){
 		rocksdb::Options instance_options(options);
 		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
 		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
-					  load_num, client_num, requests_num, async_num, is_load);
+					  load_num, client_num, requests_num, async_num, is_load, i);
 		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
 	}
 	for(int i = 0; i < num_instance; ++i) {

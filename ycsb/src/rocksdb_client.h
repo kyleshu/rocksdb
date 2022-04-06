@@ -141,6 +141,7 @@ class RocksDBClient{
 		std::atomic<uint64_t> write_finished;
 		std::atomic<uint64_t> read_finished;
 
+
 		TimeRecord *insert_failed_ = nullptr;
 
 		std::vector<rocksdb::LiveFileMetaData>  GetMetadata(std::string dir){
@@ -154,9 +155,10 @@ class RocksDBClient{
 		}
 
 	public:
+		int id_;
 		RocksDBClient(WorkloadProxy *workload_proxy, rocksdb::Options options, rocksdb::WriteOptions write_options,
 					  rocksdb::ReadOptions read_options, std::string data_dir, int loader_threads,
-					  uint64_t load_num, int worker_threads, uint64_t request_num, int async_num, int open_mod):
+					  uint64_t load_num, int worker_threads, uint64_t request_num, int async_num, int open_mod, int id):
 				workload_proxy_(workload_proxy),
 				options_(options),
 				write_options_(write_options),
@@ -171,7 +173,8 @@ class RocksDBClient{
 				total_write_latency(0),
 				total_read_latency(0),
 				write_finished(0),
-				read_finished(0){
+				read_finished(0),
+				id_(id){
 			rocksdb::Status s = rocksdb::DB::Open(options_, data_dir_, &db_);
 			if(!s.ok()){
 				printf("%s\n", s.ToString().c_str());

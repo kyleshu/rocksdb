@@ -143,6 +143,7 @@ int main(const int argc, const char *argv[]){
 	printf("------------------------------------------\n");
 	fflush(stdout);
 	for(int i = 0; i < num_instance; ++i) {
+		printf("instance %d\n",i);
 		rocksdb::Options instance_options(options);
 		ycsbc::CoreWorkload instance_wl;
 		instance_wl.Init(props);

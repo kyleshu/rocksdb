@@ -30,7 +30,6 @@ int main(const int argc, const char *argv[]){
 	rocksdb::Options options;
 	rocksdb::WriteOptions write_options;
 	rocksdb::ReadOptions read_options;
-	read_options.io_timeout = std::chrono::microseconds(100);
 	options.allow_concurrent_memtable_write = true;
 	options.recycle_log_file_num = false;
 	options.allow_2pc = false;
@@ -120,6 +119,7 @@ int main(const int argc, const char *argv[]){
 	}
 */
 	{
+		std::vector<ycsbc::RocksDBClient> clients;
 		ycsbc::RocksDBClient rocksdb_client(&wp, options, write_options, read_options, data_dir, client_num,
 					  load_num, client_num, requests_num, async_num, is_load);
 		system("sync;echo 3 > /proc/sys/vm/drop_caches");

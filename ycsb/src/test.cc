@@ -23,8 +23,9 @@ int main(const int argc, const char *argv[]){
 	const int is_load = stoi(props.GetProperty("is_load"));
 	const std::string dbname = props.GetProperty("dbname");
 	const std::string db_bak = props.GetProperty("db_bak");
-        const std::string config_path = props.GetProperty("config_path");
-        const std::string bdev_name = props.GetProperty("bdev_name");
+	const std::string config_path = props.GetProperty("config_path");
+	const std::string bdev_name = props.GetProperty("bdev_name");
+	const int num_instance = stoi(props.GetProperty("num_instance"));
 
 	//===================common-setting==========
 	rocksdb::Options options;
@@ -119,7 +120,6 @@ int main(const int argc, const char *argv[]){
 	}
 */
 	{
-		std::vector<ycsbc::RocksDBClient> clients;
 		ycsbc::RocksDBClient rocksdb_client(&wp, options, write_options, read_options, data_dir, client_num,
 					  load_num, client_num, requests_num, async_num, is_load);
 		system("sync;echo 3 > /proc/sys/vm/drop_caches");
@@ -146,8 +146,8 @@ int main(const int argc, const char *argv[]){
 }
 
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
-	if(argc != 10){
-		printf("usage: <workload_file> <client_num> <data_dir> <log_dir> <is_load> <dbname> <db_bak>\n");
+	if(argc != 11){
+		printf("usage: <workload_file> <client_num> <data_dir> <log_dir> <is_load> <dbname> <db_bak> <config_path> <bdev_name> <num_instace>\n");
 		exit(0);
 	}
 	// workload file
@@ -166,8 +166,9 @@ void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
 	props.SetProperty("is_load", argv[5]);
 	props.SetProperty("dbname", argv[6]);
 	props.SetProperty("db_bak", argv[7]);
-        props.SetProperty("config_path", argv[8]);
-        props.SetProperty("bdev_name", argv[9]);
+	props.SetProperty("config_path", argv[8]);
+	props.SetProperty("bdev_name", argv[9]);
+	props.SetProperty("num_instace", argv[10]);
 }
 
 void PrintWorkload(const char* filename){

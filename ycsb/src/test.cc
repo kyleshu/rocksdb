@@ -139,7 +139,9 @@ int main(const int argc, const char *argv[]){
 */
 	pthread_t client_thread[num_instance];
 	for(int i = 0; i < num_instance; ++i) {
-		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, options, write_options, read_options, data_dir+"/i"+std::to_string(i), client_num,
+		rocksdb::Options instanc_options(options);
+		instanc_options.wal_dir = log_dir + "/instance" + std::to_string(i);
+		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load);
 		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
 	}

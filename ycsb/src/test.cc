@@ -7,6 +7,24 @@
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 void PrintWorkload(const char* filename);
 
+void* run_test(void* args) {
+	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
+		{
+		system("sync;echo 3 > /proc/sys/vm/drop_caches");
+		fflush(stdout);
+		printf("--------------memory usage----------------\n");
+		fflush(stdout);
+		system("free -h");
+		fflush(stdout);
+		printf("------------------------------------------\n");
+		fflush(stdout);
+		rocksdb_client->Load();
+		std::this_thread::sleep_for(std::chrono::seconds(30));
+		rocksdb_client->Warmup();
+		rocksdb_client->Work();
+	}
+}
+
 int main(const int argc, const char *argv[]){
 	utils::Properties props;
 	ParseCommandLine(argc, argv, props);
@@ -119,24 +137,12 @@ int main(const int argc, const char *argv[]){
 		exit(0);
 	}
 */
-	{
-		ycsbc::RocksDBClient rocksdb_client(&wp, options, write_options, read_options, data_dir, client_num,
+	for(int i = 0; i < num_instance; ++i) {
+		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, options, write_options, read_options, data_dir, client_num,
 					  load_num, client_num, requests_num, async_num, is_load);
-		system("sync;echo 3 > /proc/sys/vm/drop_caches");
-		fflush(stdout);
-		printf("--------------memory usage----------------\n");
-		fflush(stdout);
-		system("free -h");
-		fflush(stdout);
-		printf("------------------------------------------\n");
-		fflush(stdout);
-		if(is_load == 1){
-			rocksdb_client.Load();
-			std::this_thread::sleep_for(std::chrono::seconds(30));
-			rocksdb_client.Warmup();
-			rocksdb_client.Work();
-		}else{
-		}
+		pthread_t client_thread;
+		pthread_create(&client_thread, NULL, run_test, rocksdb_client);
+		pthread_detach(client_thread);
 	}
 /*	if(dbname == "spandb"){
 		delete options.lo_env;

@@ -1,6 +1,7 @@
 #include "rocksdb_client.h"
 #include "algorithm"
 #include "math.h"
+#include <iostream>
 
 namespace ycsbc{
 
@@ -233,7 +234,7 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 			}
 			total_read_latency.fetch_add((uint64_t)time);
 			read_finished.fetch_add(1);
-			if(t%1000 == 0) printf("long time: %d, all: %u\n", t, read_finished);
+			if(read_finished%10000 == 0) std::cout << t <<"," << read_finished << std::endl;
 		}else if(opt == UPDATE || opt == INSERT || opt == READMODIFYWRITE){
 			update_time.Insert(time);
 			total_write_latency.fetch_add((uint64_t)time);

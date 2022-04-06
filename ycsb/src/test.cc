@@ -30,6 +30,7 @@ int main(const int argc, const char *argv[]){
 	rocksdb::Options options;
 	rocksdb::WriteOptions write_options;
 	rocksdb::ReadOptions read_options;
+	read_options.io_timeout = std::chrono::microseconds(1000);
 	options.allow_concurrent_memtable_write = true;
 	options.recycle_log_file_num = false;
 	options.allow_2pc = false;

@@ -217,8 +217,15 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 		}
 		double time =  TIME_DURATION(start, TIME_NOW);
 		request_time.Insert(time);
+		static int t = 0;
 		if(opt == READ || opt == SCAN){
 			read_time.Insert(time);
+			if(time > 1000) {
+				if(t<10) {
+					printf("time: %lf, now: %lf\n", time, TIME_NOW);
+					t++;
+				}
+			}
 			total_read_latency.fetch_add((uint64_t)time);
 			read_finished.fetch_add(1);
 		}else if(opt == UPDATE || opt == INSERT || opt == READMODIFYWRITE){

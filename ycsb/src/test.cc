@@ -18,9 +18,9 @@ void* run_test(void* args) {
 		fflush(stdout);
 		printf("------------------------------------------\n");
 		fflush(stdout);
-		rocksdb_client->Load();
-		std::this_thread::sleep_for(std::chrono::seconds(30));
 		if(rocksdb_client->id_ == 0) {
+			rocksdb_client->Load();
+			std::this_thread::sleep_for(std::chrono::seconds(30));
 			rocksdb_client->Warmup();
 			rocksdb_client->Work();
 		}

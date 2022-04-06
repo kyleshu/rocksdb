@@ -174,7 +174,7 @@ void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
 	props.SetProperty("db_bak", argv[7]);
 	props.SetProperty("config_path", argv[8]);
 	props.SetProperty("bdev_name", argv[9]);
-	props.SetProperty("num_instace", argv[10]);
+	props.SetProperty("num_instance", argv[10]);
 }
 
 void PrintWorkload(const char* filename){

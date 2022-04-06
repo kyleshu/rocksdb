@@ -137,12 +137,14 @@ int main(const int argc, const char *argv[]){
 		exit(0);
 	}
 */
+	pthread_t client_thread[num_instance];
 	for(int i = 0; i < num_instance; ++i) {
 		auto rocksdb_client = new ycsbc::RocksDBClient(&wp, options, write_options, read_options, data_dir, client_num,
 					  load_num, client_num, requests_num, async_num, is_load);
-		pthread_t client_thread;
-		pthread_create(&client_thread, NULL, run_test, rocksdb_client);
-		pthread_detach(client_thread);
+		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
+	}
+	for(int i = 0; i < num_instance; ++i) {
+		pthread_join(client_thread[i]);
 	}
 /*	if(dbname == "spandb"){
 		delete options.lo_env;

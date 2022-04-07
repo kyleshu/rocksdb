@@ -9,14 +9,11 @@ void PrintWorkload(const char* filename);
 
 void* run_test(void* args) {
 	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
-		{
-		//if(rocksdb_client->id_ == 0) {
-			rocksdb_client->Load();
-			std::this_thread::sleep_for(std::chrono::seconds(5));
-			rocksdb_client->Warmup();
-			rocksdb_client->Work();
-		//}
-	}
+	rocksdb_client->Load();
+	std::this_thread::sleep_for(std::chrono::seconds(5));
+	rocksdb_client->Warmup();
+	rocksdb_client->Work();
+	return NULL;
 }
 
 int main(const int argc, const char *argv[]){

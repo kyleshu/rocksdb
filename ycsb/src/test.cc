@@ -165,7 +165,7 @@ int main(const int argc, const char *argv[]){
 		tput += clients[i]->tput_;
 		work_avg_latency += clients[i]->request_time_->Sum() / clients[i]->request_time_->Size();
 	}
-	printf("total tput: %.3lf K, work latency: %.3lf us\n", tput, work_avg_latency);
+	printf("total tput: %.3lf K, work latency: %.3lf us\n", tput, work_avg_latency / num_instance);
 	for(int i = 0; i < num_instance; ++i) {
 		delete instance_wps[i];
 		delete clients[i];

@@ -39,6 +39,8 @@ int main(const int argc, const char *argv[]){
 	const std::string bdev_name = props.GetProperty("bdev_name");
 	const int num_instance = stoi(props.GetProperty("num_instance"));
 
+	ycsbc::CoreWorkload instance_wls[num_instance];
+	for(int i = 0; i < num_instance; ++i) instance_wls[i].Init(props);
 	//===================common-setting==========
 	rocksdb::Options options;
 	rocksdb::WriteOptions write_options;
@@ -145,9 +147,7 @@ int main(const int argc, const char *argv[]){
 	for(int i = 0; i < num_instance; ++i) {
 		printf("instance %d\n",i);
 		rocksdb::Options instance_options(options);
-		ycsbc::CoreWorkload instance_wl;
-		instance_wl.Init(props);
-		ycsbc::WorkloadProxy instance_wp(&instance_wl);
+		ycsbc::WorkloadProxy instance_wp(&instance_wls[i]);
 		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
 		auto rocksdb_client = new ycsbc::RocksDBClient(&instance_wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load, i);

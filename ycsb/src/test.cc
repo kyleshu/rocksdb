@@ -40,7 +40,11 @@ int main(const int argc, const char *argv[]){
 	const int num_instance = stoi(props.GetProperty("num_instance"));
 
 	ycsbc::CoreWorkload instance_wls[num_instance];
-	for(int i = 0; i < num_instance; ++i) instance_wls[i].Init(props);
+	ycsbc::WorkloadProxy* instance_wps[num_instance];
+	for(int i = 0; i < num_instance; ++i) {
+		instance_wls[i].Init(props);
+		instance_wps[i] = new ycsbc::WorkloadProxy(&instance_wls[i]);
+	}
 	//===================common-setting==========
 	rocksdb::Options options;
 	rocksdb::WriteOptions write_options;
@@ -147,14 +151,14 @@ int main(const int argc, const char *argv[]){
 	for(int i = 0; i < num_instance; ++i) {
 		printf("instance %d\n",i);
 		rocksdb::Options instance_options(options);
-		ycsbc::WorkloadProxy instance_wp(&instance_wls[i]);
 		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
-		auto rocksdb_client = new ycsbc::RocksDBClient(&instance_wp, instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
+		auto rocksdb_client = new ycsbc::RocksDBClient(instance_wps[i], instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load, i);
 		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
 	}
 	for(int i = 0; i < num_instance; ++i) {
 		pthread_join(client_thread[i], NULL);
+		delete instance_wps[i];
 	}
 /*	if(dbname == "spandb"){
 		delete options.lo_env;

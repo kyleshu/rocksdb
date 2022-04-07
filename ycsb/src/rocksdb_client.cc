@@ -9,7 +9,7 @@ void RocksDBClient::Load(){
 	Reset();
 
 	assert(request_time_ == nullptr);
-	int base_coreid = 0; /*options_.spandb_worker_num + 
+	int base_coreid = 8; /*options_.spandb_worker_num + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::LOW) + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::HIGH);
 */
@@ -47,7 +47,7 @@ void RocksDBClient::Work(){
 	read_time_ = new TimeRecord(request_num_ + 1);
 	update_time_ = new TimeRecord(request_num_ + 1);
 
-	int base_coreid = 0; /*options_.spandb_worker_num + 
+	int base_coreid = 8; /*options_.spandb_worker_num + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::LOW) + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::HIGH);
 */
@@ -72,7 +72,7 @@ void RocksDBClient::Work(){
 	for(int i=0; i<worker_threads_; i++){
 		if(i == worker_threads_ - 1)
 			num = num + request_num_ % worker_threads_;
-		threads.emplace_back(fn, num, (base_coreid + i), false, i==0);
+		threads.emplace_back(fn, num, (base_coreid + worker_threads_ * id_ + i), false, i==0);
 	}
 	for(auto &t : threads)
 		t.join();
@@ -139,7 +139,7 @@ void RocksDBClient::Work(){
 }
 
 void RocksDBClient::Warmup(){
-	int base_coreid = 0; /*options_.spandb_worker_num + 
+	int base_coreid = 8; /*options_.spandb_worker_num + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::LOW) + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::HIGH);*/
 	Reset();
@@ -164,7 +164,7 @@ void RocksDBClient::Warmup(){
 		   			    std::placeholders::_3, std::placeholders::_4);
 	//}
 	for(int i=0; i<worker_threads_; i++){
-		threads.emplace_back(fn, num, base_coreid + i, true, i==0);
+		threads.emplace_back(fn, num, base_coreid + worker_threads_ * id_ + i, true, i==0);
 	}
 	for(auto &t : threads)
 		t.join();
@@ -174,7 +174,7 @@ void RocksDBClient::Warmup(){
 }
 
 void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master){
-	// SetAffinity(coreid);
+	SetAffinity(coreid);
 	rocksdb::SetPerfLevel(rocksdb::PerfLevel::kEnableTimeExceptForMutex);
 	rocksdb::get_perf_context()->Reset();
 	rocksdb::get_iostats_context()->Reset();

@@ -32,7 +32,7 @@ void RocksDBClient::Load(){
 	PrintArgs();
 	printf("Load %ld requests in %.3lf seconds.\n", load_num_, time/1000/1000);
 	printf("==================================================================\n");
-	std::this_thread::sleep_for(std::chrono::seconds(30));
+	std::this_thread::sleep_for(std::chrono::seconds(5));
 	std::string stat_str2;
  	db_->GetProperty("rocksdb.stats", &stat_str2);
  	printf("\n%s\n", stat_str2.c_str());
@@ -117,6 +117,7 @@ void RocksDBClient::Work(){
 	}
 	printf("Work latency: %.3lf us\n", request_time_->Sum()/request_time_->Size());
 	printf("Work IOPS: %.3lf K\n", request_num_/time*1000*1000/1000);
+	tput_ = request_num_/time*1000*1000/1000;
 	printf("Work median latency: %.3lf us\n", request_time_->Tail(0.5));
 	printf("Work P999: %.3lfus, P99: %.3lfus, P95: %.3lfus, P90: %.3lfus, P75: %.3lfus\n",
 			request_time_->Tail(0.999), request_time_->Tail(0.99), request_time_->Tail(0.95),

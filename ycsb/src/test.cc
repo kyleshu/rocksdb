@@ -12,7 +12,7 @@ void* run_test(void* args) {
 		{
 		//if(rocksdb_client->id_ == 0) {
 			rocksdb_client->Load();
-			std::this_thread::sleep_for(std::chrono::seconds(30));
+			std::this_thread::sleep_for(std::chrono::seconds(5));
 			rocksdb_client->Warmup();
 			rocksdb_client->Work();
 		//}
@@ -41,6 +41,7 @@ int main(const int argc, const char *argv[]){
 
 	ycsbc::CoreWorkload instance_wls[num_instance];
 	ycsbc::WorkloadProxy* instance_wps[num_instance];
+	ycsbc::RocksDBClient* clients[num_instance];
 	for(int i = 0; i < num_instance; ++i) {
 		instance_wls[i].Init(props);
 		instance_wps[i] = new ycsbc::WorkloadProxy(&instance_wls[i]);
@@ -152,13 +153,22 @@ int main(const int argc, const char *argv[]){
 		printf("instance %d\n",i);
 		rocksdb::Options instance_options(options);
 		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
-		auto rocksdb_client = new ycsbc::RocksDBClient(instance_wps[i], instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
+		clients[i] = new ycsbc::RocksDBClient(instance_wps[i], instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
 					  load_num, client_num, requests_num, async_num, is_load, i);
-		pthread_create(&client_thread[i], NULL, run_test, rocksdb_client);
+		pthread_create(&client_thread[i], NULL, run_test, clients[i]);
 	}
+
+	double tput = 0.0;
+	double work_avg_latency  = 0.0;
 	for(int i = 0; i < num_instance; ++i) {
 		pthread_join(client_thread[i], NULL);
+		tput += clients[i]->tput_;
+		work_avg_latency += clients[i]->request_time_->Sum() / clients[i]->request_time_->Size();
+	}
+	printf("total tput: %.3lf K, work latency: %.3lf us\n", tput, work_avg_latency);
+	for(int i = 0; i < num_instance; ++i) {
 		delete instance_wps[i];
+		delete clients[i];
 	}
 /*	if(dbname == "spandb"){
 		delete options.lo_env;

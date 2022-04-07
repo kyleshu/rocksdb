@@ -50,7 +50,7 @@ inline void DeallocBuffer(void *buffer, size_t capacity){
 }
 
 class RocksDBClient{
-	private:
+	public:
 		WorkloadProxy *workload_proxy_;
 		rocksdb::DB* db_ = nullptr;
 		const rocksdb::Options options_;
@@ -63,6 +63,7 @@ class RocksDBClient{
 		const uint64_t load_num_;
 		const int worker_threads_;
 		const uint64_t request_num_;
+		double tput_;
 		const int async_num_;
 		const double warmup_rate_ = 0.3;
 

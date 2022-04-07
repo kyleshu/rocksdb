@@ -202,7 +202,7 @@ class RocksDBClient{
 		void Work();
 		void Warmup();
 
-	private:
+	public:
 		inline void SetAffinity(int coreid){
 			coreid = coreid % sysconf(_SC_NPROCESSORS_ONLN);
 			printf("client coreid: %d\n", coreid);

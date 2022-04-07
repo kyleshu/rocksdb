@@ -9,6 +9,7 @@ void PrintWorkload(const char* filename);
 
 void* run_test(void* args) {
 	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
+	rocksdb_client->SetAffinity(rocksdb_client->id_);
 	rocksdb_client->Load();
 	std::this_thread::sleep_for(std::chrono::seconds(5));
 	rocksdb_client->Warmup();

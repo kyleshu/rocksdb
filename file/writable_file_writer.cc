@@ -60,7 +60,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
   // Flush only when buffered I/O
   if (!use_direct_io() && (buf_.Capacity() - buf_.CurrentSize()) < left) {
     if (buf_.CurrentSize() > 0) {
-      printf("is append\n");
+      printf("is append to flush\n");
       s = Flush();
       if (!s.ok()) {
         return s;
@@ -89,6 +89,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
   } else {
     // Writing directly to file bypassing the buffer
     assert(buf_.CurrentSize() == 0);
+    printf("write to disk in append, %d\n", left);
     s = WriteBuffered(src, left);
   }
 

@@ -4,7 +4,7 @@
 #include <sys/vfs.h>
 #include <memory>
 #include "rocksdb/table.h"
-#include "flush_block_policy.h"
+#include "rocksdb/flush_block_policy.h"
 
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 void PrintWorkload(const char* filename);

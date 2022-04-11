@@ -59,6 +59,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
   // Flush only when buffered I/O
   if (!use_direct_io() && (buf_.Capacity() - buf_.CurrentSize()) < left) {
     if (buf_.CurrentSize() > 0) {
+      printf("is append\n");
       s = Flush();
       if (!s.ok()) {
         return s;
@@ -109,6 +110,7 @@ IOStatus WritableFileWriter::Pad(const size_t pad_bytes) {
     buf_.PadWith(append_bytes, 0);
     left -= append_bytes;
     if (left > 0) {
+      printf("is pad\n");
       IOStatus s = Flush();
       if (!s.ok()) {
         return s;
@@ -300,6 +302,7 @@ const char* WritableFileWriter::GetFileChecksumFuncName() const {
 }
 
 IOStatus WritableFileWriter::Sync(bool use_fsync) {
+  printf("is sync\n");
   IOStatus s = Flush();
   if (!s.ok()) {
     return s;

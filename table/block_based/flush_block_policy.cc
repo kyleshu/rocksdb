@@ -37,6 +37,7 @@ class FlushBlockBySizePolicy : public FlushBlockPolicy {
     }
 
     auto curr_size = data_block_builder_.CurrentSizeEstimate();
+    printf("curr size: %d, compared %d\n", curr_size, block_size_);
 
     // Do flush if one of the below two conditions is true:
     // 1) if the current estimated size already exceeds the block size,

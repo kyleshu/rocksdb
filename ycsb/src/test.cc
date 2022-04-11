@@ -2,7 +2,9 @@
 #include "iostream"
 #include "cmath"
 #include <sys/vfs.h>
+#include <memory>
 #include "rocksdb/table.h"
+#include "flush_block_policy.h"
 
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 void PrintWorkload(const char* filename);
@@ -45,9 +47,16 @@ int main(const int argc, const char *argv[]){
 		instance_wps[i] = new ycsbc::WorkloadProxy(&instance_wls[i]);
 	}
 	//===================common-setting==========
+	auto cache = rocksdb::NewLRUCache(1 * 1024 * 1024 * 1024);
+	rocksdb::BlockBasedTableOptions bbt_opts;
+	bbt_opts.block_size = 32 * 1024;
+	bbt_opts.block_cache = cache;
+	bbt_opts.flush_block_policy_factory.reset(new rocksdb::FlushBlockBySizePolicyFactory());
+	
 	rocksdb::Options options;
 	rocksdb::WriteOptions write_options;
 	rocksdb::ReadOptions read_options;
+	options.table_factory.reset(NewBlockBasedTableFactory(bbt_opts));
 	options.allow_concurrent_memtable_write = true;
 	options.recycle_log_file_num = false;
 	options.allow_2pc = false;
@@ -66,8 +75,8 @@ int main(const int argc, const char *argv[]){
 		options.create_if_missing = false;
 	}
 	options.statistics = rocksdb::CreateDBStatistics();
-	options.max_total_wal_size =  1 * (1ull << 30); // wal size
-	options.write_buffer_size = 1 * (1ull << 30);   // write buffer size
+	options.max_total_wal_size =  1 * (1ull << 20); // wal size
+	options.write_buffer_size = 1 * (1ull << 20);   // write buffer size
 	std::string db = data_dir; //"/users/kyleshu/data";
 
 	// std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";

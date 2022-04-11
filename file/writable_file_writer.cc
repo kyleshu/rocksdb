@@ -211,6 +211,7 @@ IOStatus WritableFileWriter::Close() {
 // write out the cached data to the OS cache or storage if direct I/O
 // enabled
 IOStatus WritableFileWriter::Flush() {
+  printf("in flush\n");
   IOStatus s;
   TEST_KILL_RANDOM("WritableFileWriter::Flush:0",
                    rocksdb_kill_odds * REDUCE_ODDS2);
@@ -262,6 +263,7 @@ IOStatus WritableFileWriter::Flush() {
   // Xfs does neighbor page flushing outside of the specified ranges. We
   // need to make sure sync range is far from the write offset.
   if (!use_direct_io() && bytes_per_sync_) {
+    printf("using bytes_per_sync\n");
     const uint64_t kBytesNotSyncRange =
         1024 * 1024;                                // recent 1MB is not synced.
     const uint64_t kBytesAlignWhenSync = 4 * 1024;  // Align 4KB.

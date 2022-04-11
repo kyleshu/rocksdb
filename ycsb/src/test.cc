@@ -63,6 +63,7 @@ int main(const int argc, const char *argv[]){
 	options.compression = rocksdb::kNoCompression;
 	options.max_open_files = 500000;
 	options.wal_dir = log_dir;
+	options.bytes_per_sync = 128 * 1024;
 	write_options.sync = true;
 	write_options.disableWAL = false;
 	if(is_load == 1){

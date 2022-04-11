@@ -891,6 +891,7 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 
     auto should_flush = r->flush_block_policy->Update(key, value);
     if (should_flush) {
+      printf("should flush\n");
       assert(!r->data_block.empty());
       r->first_key_in_next_block = &key;
       Flush();
@@ -975,6 +976,7 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 }
 
 void BlockBasedTableBuilder::Flush() {
+  printf("flush in table builder\n");
   Rep* r = rep_;
   assert(rep_->state != Rep::State::kClosed);
   if (!ok()) return;
@@ -1159,6 +1161,7 @@ void BlockBasedTableBuilder::WriteRawBlock(const Slice& block_contents,
                                            CompressionType type,
                                            BlockHandle* handle,
                                            bool is_data_block) {
+  printf("raw write %d\n", block_contents.size());
   Rep* r = rep_;
   Status s = Status::OK();
   IOStatus io_s = IOStatus::OK();

@@ -24,7 +24,7 @@ Writer::Writer(std::unique_ptr<WritableFileWriter>&& dest, uint64_t log_number,
       block_offset_(0),
       log_number_(log_number),
       recycle_log_files_(recycle_log_files),
-      manual_flush_(manual_flush) {
+      manual_flush_(true) {
   for (int i = 0; i <= kMaxRecordType; i++) {
     char t = static_cast<char>(i);
     type_crc_[i] = crc32c::Value(&t, 1);

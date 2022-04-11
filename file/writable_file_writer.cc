@@ -216,7 +216,7 @@ IOStatus WritableFileWriter::Flush() {
   TEST_KILL_RANDOM("WritableFileWriter::Flush:0",
                    rocksdb_kill_odds * REDUCE_ODDS2);
 
-  if (buf_.CurrentSize() > 0) {
+  if (buf_.CurrentSize() >= 64 * 1024) {
     if (use_direct_io()) {
 #ifndef ROCKSDB_LITE
       if (pending_sync_) {

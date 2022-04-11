@@ -37,7 +37,9 @@ Writer::~Writer() {
   }
 }
 
-IOStatus Writer::WriteBuffer() { return dest_->Flush(); }
+IOStatus Writer::WriteBuffer() { 
+  printf("write buffer to flush\n");
+  return dest_->Flush(); }
 
 IOStatus Writer::Close() {
   IOStatus s;
@@ -105,6 +107,7 @@ IOStatus Writer::AddRecord(const Slice& slice) {
 
   if (s.ok()) {
     if (!manual_flush_) {
+      printf("add record to flush\n");
       s = dest_->Flush();
     }
   }

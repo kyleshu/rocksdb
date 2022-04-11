@@ -49,6 +49,7 @@ Status BlobLogWriter::WriteHeader(BlobLogHeader& header) {
   Status s = dest_->Append(Slice(str));
   if (s.ok()) {
     block_offset_ += str.size();
+    printf("write header to flush\n");
     s = dest_->Flush();
   }
   last_elem_type_ = kEtFileHdr;
@@ -153,6 +154,7 @@ Status BlobLogWriter::EmitPhysicalRecord(const std::string& headerbuf,
     s = dest_->Append(val);
   }
   if (s.ok()) {
+    printf("emit record to flush\n");
     s = dest_->Flush();
   }
 

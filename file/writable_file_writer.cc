@@ -22,7 +22,7 @@
 
 namespace ROCKSDB_NAMESPACE {
 IOStatus WritableFileWriter::Append(const Slice& data) {
-  printf("in append, size %d\n", data.size());
+  // printf("in append, size %d\n", data.size());
   const char* src = data.data();
   size_t left = data.size();
   IOStatus s;
@@ -79,7 +79,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
       src += appended;
 
       if (left > 0) {
-        printf("%d, %d, %d\n", use_direct_io(), buf_.Capacity(), left);
+        // printf("%d, %d, %d\n", use_direct_io(), buf_.Capacity(), left);
         s = Flush();
         if (!s.ok()) {
           break;
@@ -89,7 +89,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
   } else {
     // Writing directly to file bypassing the buffer
     assert(buf_.CurrentSize() == 0);
-    printf("write to disk in append, %d\n", left);
+    // printf("write to disk in append, %d\n", left);
     s = WriteBuffered(src, left);
   }
 
@@ -97,7 +97,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
   if (s.ok()) {
     filesize_ += data.size();
   }
-  printf("fin at append\n");
+  // printf("fin at append\n");
   return s;
 }
 
@@ -114,7 +114,7 @@ IOStatus WritableFileWriter::Pad(const size_t pad_bytes) {
     buf_.PadWith(append_bytes, 0);
     left -= append_bytes;
     if (left > 0) {
-      printf("is pad\n");
+      // printf("is pad\n");
       IOStatus s = Flush();
       if (!s.ok()) {
         return s;
@@ -306,8 +306,8 @@ const char* WritableFileWriter::GetFileChecksumFuncName() const {
 }
 
 IOStatus WritableFileWriter::Sync(bool use_fsync) {
-  printf("is sync\n");
-  if(buf_.CurrentSize() < 16 * 1024) {
+  // printf("is sync\n");
+  if(buf_.CurrentSize() < 128 * 1024) {
     return IOStatus::OK();
   }
   IOStatus s = Flush();

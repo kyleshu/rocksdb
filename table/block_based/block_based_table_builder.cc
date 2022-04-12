@@ -891,7 +891,7 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 
     auto should_flush = r->flush_block_policy->Update(key, value);
     if (should_flush) {
-      printf("should flush\n");
+      // printf("should flush\n");
       assert(!r->data_block.empty());
       r->first_key_in_next_block = &key;
       Flush();
@@ -976,14 +976,14 @@ void BlockBasedTableBuilder::Add(const Slice& key, const Slice& value) {
 }
 
 void BlockBasedTableBuilder::Flush() {
-  printf("flush in table builder\n");
+  // printf("flush in table builder\n");
   Rep* r = rep_;
   assert(rep_->state != Rep::State::kClosed);
   if (!ok()) return;
   if (r->data_block.empty()) return;
   if (r->IsParallelCompressionEnabled() &&
       r->state == Rep::State::kUnbuffered) {
-    printf("parallel and kunbuffered\n");
+    // printf("parallel and kunbuffered\n");
     r->data_block.Finish();
     ParallelCompressionRep::BlockRep* block_rep = r->pc_rep->PrepareBlock(
         r->compression_type, r->first_key_in_next_block, &(r->data_block));
@@ -992,7 +992,7 @@ void BlockBasedTableBuilder::Flush() {
                                              r->get_offset());
     r->pc_rep->EmitBlock(block_rep);
   } else {
-    printf("write to block\n");
+    // printf("write to block\n");
     WriteBlock(&r->data_block, &r->pending_handle, true /* is_data_block */);
   }
 }
@@ -1163,7 +1163,7 @@ void BlockBasedTableBuilder::WriteRawBlock(const Slice& block_contents,
                                            CompressionType type,
                                            BlockHandle* handle,
                                            bool is_data_block) {
-  printf("raw write %d\n", block_contents.size());
+  // printf("raw write %d\n", block_contents.size());
   Rep* r = rep_;
   Status s = Status::OK();
   IOStatus io_s = IOStatus::OK();

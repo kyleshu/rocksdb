@@ -307,6 +307,9 @@ const char* WritableFileWriter::GetFileChecksumFuncName() const {
 
 IOStatus WritableFileWriter::Sync(bool use_fsync) {
   printf("is sync\n");
+  if(buf_.CurrentSize() < 16 * 1024) {
+    return IOStatus::OK();
+  }
   IOStatus s = Flush();
   if (!s.ok()) {
     return s;

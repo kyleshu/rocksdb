@@ -22,7 +22,7 @@
 
 namespace ROCKSDB_NAMESPACE {
 IOStatus WritableFileWriter::Append(const Slice& data) {
-  printf("in append\n");
+  printf("in append, size %d\n", data.size());
   const char* src = data.data();
   size_t left = data.size();
   IOStatus s;
@@ -97,6 +97,7 @@ IOStatus WritableFileWriter::Append(const Slice& data) {
   if (s.ok()) {
     filesize_ += data.size();
   }
+  printf("fin at append\n");
   return s;
 }
 

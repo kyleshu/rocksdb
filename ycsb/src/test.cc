@@ -11,7 +11,7 @@ void PrintWorkload(const char* filename);
 
 void* run_test(void* args) {
 	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
-	rocksdb_client->SetAffinity(rocksdb_client->id_);
+	// rocksdb_client->SetAffinity(rocksdb_client->id_);
 	rocksdb_client->Load();
 	std::this_thread::sleep_for(std::chrono::seconds(5));
 	rocksdb_client->Warmup();
@@ -76,8 +76,8 @@ int main(const int argc, const char *argv[]){
 		options.create_if_missing = false;
 	}
 	options.statistics = rocksdb::CreateDBStatistics();
-	options.max_total_wal_size =  1 * (1ull << 20); // wal size
-	options.write_buffer_size = 1 * (1ull << 20);   // write buffer size
+	options.max_total_wal_size =  1 * (1ull << 25); // wal size
+	options.write_buffer_size = 1 * (1ull << 25);   // write buffer size
 	std::string db = data_dir; //"/users/kyleshu/data";
 
 	// std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";

@@ -174,7 +174,7 @@ void RocksDBClient::Warmup(){
 }
 
 void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master){
-	SetAffinity(coreid);
+	// (coreid);
 	rocksdb::SetPerfLevel(rocksdb::PerfLevel::kEnableTimeExceptForMutex);
 	rocksdb::get_perf_context()->Reset();
 	rocksdb::get_iostats_context()->Reset();

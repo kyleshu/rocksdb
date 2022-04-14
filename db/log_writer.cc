@@ -38,7 +38,7 @@ Writer::~Writer() {
 }
 
 IOStatus Writer::WriteBuffer() { 
-  printf("write buffer to flush\n");
+  // printf("write buffer to flush\n");
   return dest_->Flush(); }
 
 IOStatus Writer::Close() {

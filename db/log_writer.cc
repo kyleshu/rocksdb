@@ -107,7 +107,6 @@ IOStatus Writer::AddRecord(const Slice& slice) {
 
   if (s.ok()) {
     if (!manual_flush_) {
-      printf("add record to flush\n");
       s = dest_->Flush();
     }
   }

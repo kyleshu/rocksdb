@@ -1679,13 +1679,13 @@ public:
   std::string conf;
   std::string bdev_name;
 
-    virtual void Write(void* src, uint64_t offset, uint64_t length);
+  virtual void Write(void* src, uint64_t offset, uint64_t length) = 0;
 
-    virtual void Read(void* dst, uint64_t offset, uint64_t length);
+  virtual void Read(void* dst, uint64_t offset, uint64_t length) = 0;
 
-    KVStore(const std::string &_conf, const std::string &_bdev_name):conf(_conf), bdev_name(_bdev_name) {}
+  KVStore(const std::string &_conf, const std::string &_bdev_name):conf(_conf), bdev_name(_bdev_name) {}
 
-    virtual ~KVStore() {}
+  virtual ~KVStore() {}
 };
 
 KVStore* NewSpdkKVStore(const std::string &conf, const std::string &bdev_name);

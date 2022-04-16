@@ -26,8 +26,8 @@
 # which orders items purely by time, and demands the latest, is very different than
 # workload here (which we believe is more typical of how people build systems.)
 
-recordcount=1000
-operationcount=1000
+recordcount=200000
+operationcount=200000
 workload=site.ycsb.workloads.CoreWorkload
 
 readallfields=true
@@ -37,4 +37,10 @@ updateproportion=0
 scanproportion=0
 insertproportion=0.05
 
-requestdistribution=latest
+requestdistribution=uniform
+
+fieldlength=131072
+
+fieldcount=1
+
+readallfields=true

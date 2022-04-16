@@ -202,8 +202,8 @@ class RocksDBClient{
 			return std::string(buffer);
 		}
 
-		void RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master);
-		void RocksdDBLoader(uint64_t num, int coreid);
+		void RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master, int id);
+		void RocksdDBLoader(uint64_t num, int coreid, int id);
 		void Reset();
 		void PrintArgs();
 };

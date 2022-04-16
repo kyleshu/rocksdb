@@ -3,11 +3,18 @@
 #include "math.h"
 #include <iostream>
 #include <functional>
+#include <unordered_map>
+#include <pthread.h>
 
 namespace ycsbc{
 
+static constexpr int maxClients = 512;
+static std::unordered_map<std::string, uint64_t> hashMap;
+static pthread_spinlock_t lock;
+
 void RocksDBClient::Load(){
 	Reset();
+	pthread_spin_init(&lock, PTHREAD_PROCESS_PRIVATE);
 
 	assert(request_time_ == nullptr);
 	int base_coreid = 16; /*options_.spandb_worker_num + 
@@ -18,12 +25,12 @@ void RocksDBClient::Load(){
 	uint64_t num = load_num_ / loader_threads_;
 	std::vector<std::thread> threads;
 	auto fn = std::bind(&RocksDBClient::RocksdDBLoader, this, 
-						std::placeholders::_1, std::placeholders::_2);
+						std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
 	auto start = TIME_NOW;
 	for(int i=0; i<loader_threads_; i++){
 		if(i == loader_threads_ - 1)
 			num = num + load_num_ % loader_threads_;
-		threads.emplace_back(fn, num, (base_coreid + i));
+		threads.emplace_back(fn, num, (base_coreid + i), i);
 	}
 	for(auto &t : threads)
 		t.join();
@@ -55,7 +62,7 @@ void RocksDBClient::Work(){
 
 	uint64_t num = request_num_ / worker_threads_;
 	std::vector<std::thread> threads;
-	std::function< void(uint64_t, int, bool, bool)> fn;
+	std::function< void(uint64_t, int, bool, bool, int)> fn;
 /*	if(options_.enable_spdklogging){
 		fn = std::bind(&RocksDBClient::SpanDBWorker, this, 
 						std::placeholders::_1, std::placeholders::_2,
@@ -63,7 +70,7 @@ void RocksDBClient::Work(){
 	}else{*/
 		fn = std::bind(&RocksDBClient::RocksDBWorker, this, 
 		   			    std::placeholders::_1, std::placeholders::_2,
-		   			    std::placeholders::_3, std::placeholders::_4);
+		   			    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
 	//}
 	printf("start time: %s\n", GetDayTime().c_str());
 	auto start = TIME_NOW;
@@ -133,7 +140,7 @@ void RocksDBClient::Warmup(){
 	const uint64_t num = warmup_num / worker_threads_;
 	printf("Start warmup (%ld)...\n", num*worker_threads_);
 	std::vector<std::thread> threads;
-	std::function< void(uint64_t, int, bool, bool)> fn;
+	std::function< void(uint64_t, int, bool, bool, int)> fn;
 	printf("warmup start: %s\n", GetDayTime().c_str());
 /*	if(options_.enable_spdklogging){
 		fn = std::bind(&RocksDBClient::SpanDBWorker, this, 
@@ -142,10 +149,10 @@ void RocksDBClient::Warmup(){
 	}else{*/
 		fn = std::bind(&RocksDBClient::RocksDBWorker, this, 
 		   			    std::placeholders::_1, std::placeholders::_2,
-		   			    std::placeholders::_3, std::placeholders::_4);
+		   			    std::placeholders::_3, std::placeholders::_4, std::placeholders::_5);
 	//}
 	for(int i=0; i<worker_threads_; i++){
-		threads.emplace_back(fn, num, base_coreid + worker_threads_ * id_ + i, true, i==0);
+		threads.emplace_back(fn, num, base_coreid + worker_threads_ * id_ + i, true, i==0, i);
 	}
 	for(auto &t : threads)
 		t.join();
@@ -154,7 +161,7 @@ void RocksDBClient::Warmup(){
 	printf("Warmup complete %ld requests in %.3lf seconds.\n", num*worker_threads_, time/1000/1000);
 }
 
-void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master){
+void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master, int id){
 	// SetAffinity(coreid);
 
 	TimeRecord request_time(num + 1);
@@ -172,30 +179,40 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 		ycsbc::Operation opt = req->Type();
 		assert(req != nullptr);
 		auto start = TIME_NOW;
-		uint64_t offset = rand() % (1 << 21);
+		uint64_t offset;
 		if(opt == READ){
-			// db_->Get(read_options_, req->Key(), &r_value);
+			offset = hashMap.find(req->Key())->second;
 			db_->Read(r_value, offset, 256);
+			// db_->Get(read_options_, req->Key(), &r_value);
 		}else if(opt == UPDATE){
+			offset = hashMap.find(req->Key())->second;
 			db_->Write(w_value, offset, 256);
 			// ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
 		}
-// 		else if(opt == INSERT){
-// 			ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
-// 		}else if(opt == READMODIFYWRITE){
-// 			// db_->Get(read_options_, req->Key(), &r_value);
-// 			ERR(db_->Get(read_options_, req->Key(), &r_value));
-// 			ERR(db_->Put(write_options_, req->Key(), w_value));
-// 		}else if(opt == SCAN){
-// //			rocksdb::Iterator* iter = db_->NewIterator(read_options_);
-// //			iter->Seek(req->Key());
-// //			for (int i = 0; i < req->Length() && iter->Valid(); i++) {
-// //				// Do something with it->key() and it->value().
-// //        		iter->Next();
-// //    		}
-// //    		ERR(iter->status());
-// //    		delete iter;
-// 		}
+		else if(opt == INSERT){
+			offset = rand() % (1 << 21);
+			pthread_spin_lock(&lock);
+			hashMap.insert(std::pair<std::string, uint64_t>(req->Key(), offset));
+			pthread_spin_unlock(&lock);
+			db_->Write(w_value, offset, 256);
+			// ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
+		}else if(opt == READMODIFYWRITE){
+			offset = hashMap.find(req->Key())->second;
+			db_->Read(r_value, offset, 256);
+			db_->Write(w_value, offset, 256);
+			// db_->Get(read_options_, req->Key(), &r_value);
+			// ERR(db_->Get(read_options_, req->Key(), &r_value));
+			// ERR(db_->Put(write_options_, req->Key(), w_value));
+		}else if(opt == SCAN){
+//			rocksdb::Iterator* iter = db_->NewIterator(read_options_);
+//			iter->Seek(req->Key());
+//			for (int i = 0; i < req->Length() && iter->Valid(); i++) {
+//				// Do something with it->key() and it->value().
+//        		iter->Next();
+//    		}
+//    		ERR(iter->status());
+//    		delete iter;
+		}
 		else{
 			throw utils::Exception("Operation request is not recognized!");
 		}
@@ -225,20 +242,23 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 	mutex_.unlock();
 }
 
-void RocksDBClient::RocksdDBLoader(uint64_t num, int coreid){
+void RocksDBClient::RocksdDBLoader(uint64_t num, int coreid, int id){
 	char w_value[128 * 1024];
 	for(uint64_t i=0; i<num; i++){
 		uint64_t offset = rand() % (1 << 21);
-		db_->Write(w_value, offset, 256);
-		// std::string table;
-		// std::string key;
-		// std::vector<ycsbc::CoreWorkload::KVPair> values;
-		// workload_proxy_->LoadInsertArgs(table, key, values);
-		// assert(values.size() == 1);
-		// for (ycsbc::CoreWorkload::KVPair &field_pair : values) {
-		// 	std::string value = field_pair.second;
-		// 	ERR(db_->Put(write_options_, key, value));
-		// }
+		std::string table;
+		std::string key;
+		std::vector<ycsbc::CoreWorkload::KVPair> values;
+		workload_proxy_->LoadInsertArgs(table, key, values);
+		assert(values.size() == 1);
+		for (ycsbc::CoreWorkload::KVPair &field_pair : values) {
+			std::string value = field_pair.second;
+			db_->Write(w_value, offset, 256);
+			pthread_spin_lock(&lock);
+			hashMap.insert(std::pair<std::string, uint64_t>(key, offset));
+			pthread_spin_unlock(&lock);
+			// ERR(db_->Put(write_options_, key, value));
+		}
 	}
 }
 

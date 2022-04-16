@@ -5,6 +5,18 @@
 #include "sys/syscall.h"
 #include "unistd.h"
 
+#include "rocksdb/db.h"
+#include "rocksdb/table.h"
+#include "rocksdb/options.h"
+#include "rocksdb/utilities/options_util.h"
+#include "rocksdb/utilities/transaction_db.h"
+#include "rocksdb/iostats_context.h"
+#include "rocksdb/perf_context.h"
+#include "rocksdb/utilities/transaction.h"
+#include "rocksdb/merge_operator.h"
+#include "rocksdb/slice.h"
+#include "rocksdb/metadata.h"
+
 #include "workloadwrapper.h"
 
 #include <sys/time.h>

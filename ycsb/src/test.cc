@@ -81,7 +81,7 @@ int main(const int argc, const char *argv[]){
 	// std::string spdk_bdev = "Nvme0n1";
 	std::string spdk_name = config_path; //"/users/kyleshu/git/dRaid/raid_config/raid5.json";
 	std::string spdk_bdev = bdev_name; //"Raid0";
-	auto db = new ycsbc::KVStore(config_path, bdev_name);
+	auto db = rocksdb::NewSpdkKVStore(config_path, bdev_name);
 //	options.env = env;
 //	/*options.auto_config = true;
 //	options.dynamic_moving = true;

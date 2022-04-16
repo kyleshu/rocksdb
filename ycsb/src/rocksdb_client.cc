@@ -2,6 +2,7 @@
 #include "algorithm"
 #include "math.h"
 #include <iostream>
+#include <functional>
 
 namespace ycsbc{
 
@@ -9,7 +10,7 @@ void RocksDBClient::Load(){
 	Reset();
 
 	assert(request_time_ == nullptr);
-	int base_coreid = 8; /*options_.spandb_worker_num + 
+	int base_coreid = 16; /*options_.spandb_worker_num + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::LOW) + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::HIGH);
 */
@@ -33,9 +34,6 @@ void RocksDBClient::Load(){
 	printf("Load %ld requests in %.3lf seconds.\n", load_num_, time/1000/1000);
 	printf("==================================================================\n");
 	std::this_thread::sleep_for(std::chrono::seconds(5));
-	std::string stat_str2;
- 	db_->GetProperty("rocksdb.stats", &stat_str2);
- 	printf("\n%s\n", stat_str2.c_str());
 }
 
 void RocksDBClient::Work(){
@@ -47,7 +45,7 @@ void RocksDBClient::Work(){
 	read_time_ = new TimeRecord(request_num_ + 1);
 	update_time_ = new TimeRecord(request_num_ + 1);
 
-	int base_coreid = 8; /*options_.spandb_worker_num + 
+	int base_coreid = 16; /*options_.spandb_worker_num + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::LOW) + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::HIGH);
 */
@@ -79,17 +77,12 @@ void RocksDBClient::Work(){
 	double time = TIME_DURATION(start, TIME_NOW);
 	printf("end time: %s\n", GetDayTime().c_str());
 
-	std::string stat_str2;
-	db_->GetProperty("rocksdb.stats", &stat_str2);
-	printf("\n%s\n", stat_str2.c_str());
 	fflush(stdout);
 
 	assert(request_time_->Size() == request_num_);
 	printf("==================================================================\n");
 	PrintArgs();
 	printf("WAL sync time per request: %.3lf us\n", wal_time_/request_num_);
-	printf("WAL sync time per sync: %.3lf us\n", wal_time_/
-		   							options_.statistics->getTickerCount(rocksdb::WAL_FILE_SYNCED));
 	printf("Wait time: %.3lf us\n", wait_time_/request_num_);
 	// printf("Complete wait time: %.3lf us\n", complete_memtable_time_/request_num_);
 	printf("Write delay time: %.3lf us\n", write_delay_time_/request_num_);
@@ -122,24 +115,12 @@ void RocksDBClient::Work(){
 	printf("Work P999: %.3lfus, P99: %.3lfus, P95: %.3lfus, P90: %.3lfus, P75: %.3lfus\n",
 			request_time_->Tail(0.999), request_time_->Tail(0.99), request_time_->Tail(0.95),
 		    request_time_->Tail(0.90), request_time_->Tail(0.75));
-	printf("Stall: %.3lf us\n", options_.statistics->getTickerCount(rocksdb::STALL_MICROS)*1.0);
-	printf("Stall rate: %.3lf \n", options_.statistics->getTickerCount(rocksdb::STALL_MICROS)*1.0/time);
-	printf("Block read time: %.3lf us\n", block_read_time_/read_time_->Size());
-	uint64_t block_hit = options_.statistics->getTickerCount(rocksdb::BLOCK_CACHE_HIT);
-	uint64_t block_miss = options_.statistics->getTickerCount(rocksdb::BLOCK_CACHE_MISS);
-	uint64_t memtable_hit = options_.statistics->getTickerCount(rocksdb::MEMTABLE_HIT);
-	uint64_t memtable_miss = options_.statistics->getTickerCount(rocksdb::MEMTABLE_MISS);
-	printf("block cache hit ratio: %.3lf (hit: %ld, miss: %ld)\n", 
-			block_hit*1.0/(block_hit+block_miss), block_hit, block_miss);
-	printf("memtable hit ratio: %.3lf (hit: %ld, miss: %ld)\n",
-		   memtable_hit*1.0/(memtable_hit+memtable_miss), memtable_hit, memtable_miss);
-	printf("submit_time: %.3lf\n", submit_time_ / 1000.0 / request_num_);
 	printf("==================================================================\n");
 	fflush(stdout);
 }
 
 void RocksDBClient::Warmup(){
-	int base_coreid = 8; /*options_.spandb_worker_num + 
+	int base_coreid = 16; /*options_.spandb_worker_num + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::LOW) + 
 					  options_.env->GetBgThreadCores(rocksdb::Env::HIGH);*/
 	Reset();
@@ -174,10 +155,7 @@ void RocksDBClient::Warmup(){
 }
 
 void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master){
-	// (coreid);
-	rocksdb::SetPerfLevel(rocksdb::PerfLevel::kEnableTimeExceptForMutex);
-	rocksdb::get_perf_context()->Reset();
-	rocksdb::get_iostats_context()->Reset();
+	// SetAffinity(coreid);
 
 	TimeRecord request_time(num + 1);
 	TimeRecord read_time(num + 1);
@@ -187,34 +165,38 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 		printf("starting requests...\n");
 	}
 
-	std::string w_value(1024, 'a');
-	std::string r_value;
+	char w_value[1024 * 128]; // TODO: change to a buffer
+	char r_value[1024 * 128];
 	for(uint64_t i=0; i<num; i++){
 		WorkloadWrapper::Request *req = workload_wrapper_->GetNextRequest();
 		ycsbc::Operation opt = req->Type();
 		assert(req != nullptr);
 		auto start = TIME_NOW;
+		uint64_t offset = random() % (1 << 21);
 		if(opt == READ){
 			// db_->Get(read_options_, req->Key(), &r_value);
-			ERR(db_->Get(read_options_, req->Key(), &r_value));
+			db_->Read(r_value, offset, 256);
 		}else if(opt == UPDATE){
-			ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
-		}else if(opt == INSERT){
-			ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
-		}else if(opt == READMODIFYWRITE){
-			// db_->Get(read_options_, req->Key(), &r_value);
-			ERR(db_->Get(read_options_, req->Key(), &r_value));
-			ERR(db_->Put(write_options_, req->Key(), w_value));
-		}else if(opt == SCAN){
-			rocksdb::Iterator* iter = db_->NewIterator(read_options_);
-			iter->Seek(req->Key());
-			for (int i = 0; i < req->Length() && iter->Valid(); i++) {
-				// Do something with it->key() and it->value().
-        		iter->Next();
-    		}
-    		ERR(iter->status());
-    		delete iter;
-		}else{
+			db_->Write(w_value, offset, 256);
+			// ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
+		}
+// 		else if(opt == INSERT){
+// 			ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
+// 		}else if(opt == READMODIFYWRITE){
+// 			// db_->Get(read_options_, req->Key(), &r_value);
+// 			ERR(db_->Get(read_options_, req->Key(), &r_value));
+// 			ERR(db_->Put(write_options_, req->Key(), w_value));
+// 		}else if(opt == SCAN){
+// //			rocksdb::Iterator* iter = db_->NewIterator(read_options_);
+// //			iter->Seek(req->Key());
+// //			for (int i = 0; i < req->Length() && iter->Valid(); i++) {
+// //				// Do something with it->key() and it->value().
+// //        		iter->Next();
+// //    		}
+// //    		ERR(iter->status());
+// //    		delete iter;
+// 		}
+		else{
 			throw utils::Exception("Operation request is not recognized!");
 		}
 		double time =  TIME_DURATION(start, TIME_NOW);
@@ -240,180 +222,27 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 	request_time_->Join(&request_time);
 	read_time_->Join(&read_time);
 	update_time_->Join(&update_time);
-	wal_time_ += rocksdb::get_perf_context()->write_wal_time/1000.0;
-	wait_time_ += rocksdb::get_perf_context()->write_thread_wait_nanos/1000.0;
-	// complete_memtable_time_ += rocksdb::get_perf_context()->complete_parallel_memtable_time/1000.0;
-	write_delay_time_ += rocksdb::get_perf_context()->write_delay_time/1000.0;
-	block_read_time_ += rocksdb::get_perf_context()->block_read_time/1000.0;
-	write_memtable_time_ += rocksdb::get_perf_context()->write_memtable_time/1000.0;
-	//printf("%s\n\n",rocksdb::get_perf_context()->ToString().c_str());
-	//printf("%s\n\n",rocksdb::get_iostats_context()->ToString().c_str());
 	mutex_.unlock();
 }
-/*
-void RocksDBClient::SpanDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master){
-	SetAffinity(coreid);
-	rocksdb::SetPerfLevel(rocksdb::PerfLevel::kEnableTimeExceptForMutex);
-	rocksdb::get_perf_context()->Reset();
-	rocksdb::get_iostats_context()->Reset();
 
-	TimeRecord request_time(num + 1);
-	TimeRecord read_time(num + 1);
-	TimeRecord update_time(num + 1);
-
-	//1. prepare pipeline
-	TimePoint *senttime = new TimePoint[async_num_];
-	// rocksdb::Status **status = new rocksdb::Status *[async_num_];
-	std::atomic<rocksdb::Status *> *status = new std::atomic<rocksdb::Status *>[async_num_];
-	bool *occupied = new bool[async_num_];
-	std::string *return_values = new std::string[async_num_];
-	WorkloadWrapper::Request **requests = new WorkloadWrapper::Request*[async_num_];
-	for(int i=0; i<async_num_; i++){
-		status[i].store(nullptr);
-		occupied[i] = false;
-		requests[i] = nullptr;
-	}
-	uint64_t k=0, j=0;
-	WorkloadWrapper::Request *next_req = nullptr;
-	std::string w_value(1024, 'a');
-	rocksdb::Status s;
-
-	if(!is_warmup && is_master){
-		printf("starting requests...\n"); 
-	}
-
-	//2. start
-	while(true){
-		//send a request
-		if(k < num && next_req == nullptr){
-			next_req = workload_wrapper_->GetNextRequest();
-			k++;
-		}
-		for(int i=0; i<async_num_; i++){
-			if(!occupied[i]){
-				if(LIKELY(k <= num && next_req != nullptr)){
-					assert(requests[i] == nullptr);
-					assert(status[i].load() == nullptr);
-					senttime[i] = TIME_NOW;
-					if(next_req->Type() == READ){
-						s = db_->AsyncGet(read_options_, next_req->Key(), &(return_values[i]), status[i]);
-					}else if(next_req->Type() == UPDATE){
-						s = db_->AsyncPut(write_options_, next_req->Key(), w_value, status[i]);
-					}else if(next_req->Type() == INSERT){
-						s = db_->AsyncPut(write_options_, next_req->Key(), w_value, status[i]);
-					}else if(next_req->Type() == SCAN){
-						s = db_->AsyncScan(read_options_, next_req->Key(), &(return_values[i]), next_req->Length(), status[i]);
-					}else if(next_req->Type() == READMODIFYWRITE){
-						s = db_->AsyncGet(read_options_, next_req->Key(), &(return_values[i]), status[i]);
-					}else{
-						throw utils::Exception("Operation request is not recognized!");
-					}
-					if(UNLIKELY(!s.ok())){
-						if(status[i].load() != nullptr)
-                        	delete status[i].load();
-                        status[i].store(nullptr);
-                    }else{
-                    	requests[i] = next_req;
-                    	occupied[i] = true;
-                    	next_req = nullptr;
-                    }
-				}
-				break;
-			}
-		}
-		//check completion
-		bool finished = (next_req == nullptr);
-		for(int i=0; i<async_num_; i++){
-			if(occupied[i]){
-				if(UNLIKELY(status[i].load() != nullptr)){
-					if(!status[i].load()->ok()){ 
-                        fprintf(stderr,"%s: %d: %s\n", __FILE__, __LINE__, status[i].load()->ToString().c_str());
-                        assert(false);
-                    }
-                    assert(requests[i] != nullptr);
-                    if(requests[i]->Type() == READMODIFYWRITE){
-                    	// delete  status[i].load();
-                    	status[i].store(nullptr);
-                    	ERR(db_->AsyncPut(write_options_, requests[i]->Key(), w_value, status[i]));
-                    	requests[i]->SetType(UPDATE);
-                    	finished = false;
-                    	continue;
-                    }
-                    double time = TIME_DURATION(senttime[i], TIME_NOW);
-                    request_time.Insert(time);
-                    if(requests[i]->Type() == READ || requests[i]->Type() == SCAN){
-                    	read_time.Insert(time);
-                    	read_finished.fetch_add(1);
-                    	total_read_latency.fetch_add((uint64_t)time);
-                    }else if(requests[i]->Type() == UPDATE || requests[i]->Type() == INSERT){
-                    	update_time.Insert(time);
-                    	write_finished.fetch_add(1);
-                    	total_write_latency.fetch_add((uint64_t)time);
-                    }else{
-                    	assert(0);
-                    }
-
-                    requests[i] = nullptr;
-                    //delete status[i];
-                    status[i].store(nullptr);
-                    occupied[i] = false;
-                    j++;
-				}
-				finished = false;
-			}
-		}
-		//finish all requests
-		if(UNLIKELY(finished && k == num))
-			break;
-	}
-	assert(k==num);
-	assert(j==num);
-
-	if(is_warmup)
-		return;
-	mutex_.lock();
-	request_time_->Join(&request_time);
-	read_time_->Join(&read_time);
-	update_time_->Join(&update_time);
-	wal_time_ += rocksdb::get_perf_context()->write_wal_time/1000.0;
-	wait_time_ += rocksdb::get_perf_context()->write_thread_wait_nanos/1000.0;
-	complete_memtable_time_ += rocksdb::get_perf_context()->complete_parallel_memtable_time/1000.0;
-	write_delay_time_ += rocksdb::get_perf_context()->write_delay_time/1000.0;
-	block_read_time_ += rocksdb::get_perf_context()->block_read_time/1000.0;
-	write_memtable_time_ += rocksdb::get_perf_context()->write_memtable_time/1000.0;
-	//printf("%s\n\n",rocksdb::get_perf_context()->ToString().c_str());
-	//printf("%s\n\n",rocksdb::get_iostats_context()->ToString().c_str());
-	mutex_.unlock();
-}
-*/
 void RocksDBClient::RocksdDBLoader(uint64_t num, int coreid){
-	rocksdb::SetPerfLevel(rocksdb::PerfLevel::kEnableTimeExceptForMutex);
-	rocksdb::get_perf_context()->Reset();
-	rocksdb::get_iostats_context()->Reset();
-	for(uint64_t i=0; i<num; i++){		
-		std::string table;
-		std::string key;
-		std::vector<ycsbc::CoreWorkload::KVPair> values;
-		workload_proxy_->LoadInsertArgs(table, key, values);
-		assert(values.size() == 1);
-		for (ycsbc::CoreWorkload::KVPair &field_pair : values) {
-			std::string value = field_pair.second;
-			ERR(db_->Put(write_options_, key, value));
-		}
+	char w_value[128 * 1024];
+	for(uint64_t i=0; i<num; i++){
+		uint64_t offset = random() % (1 << 21);
+		db_->Write(w_value, offset, 256);
+		// std::string table;
+		// std::string key;
+		// std::vector<ycsbc::CoreWorkload::KVPair> values;
+		// workload_proxy_->LoadInsertArgs(table, key, values);
+		// assert(values.size() == 1);
+		// for (ycsbc::CoreWorkload::KVPair &field_pair : values) {
+		// 	std::string value = field_pair.second;
+		// 	ERR(db_->Put(write_options_, key, value));
+		// }
 	}
-	mutex_.lock();
-	wal_time_ += rocksdb::get_perf_context()->write_wal_time/1000.0;
-	wait_time_ += rocksdb::get_perf_context()->write_thread_wait_nanos/1000.0;
-	// complete_memtable_time_ += rocksdb::get_perf_context()->complete_parallel_memtable_time/1000.0;
-	write_delay_time_ += rocksdb::get_perf_context()->write_delay_time/1000.0;
-	write_memtable_time_ += rocksdb::get_perf_context()->write_memtable_time/1000.0;
-	mutex_.unlock();
 }
 
 void RocksDBClient::Reset(){
-	options_.statistics->Reset();
-	// options_.lo_env->ResetStat();
-	db_->ResetStats();
 	wait_time_ = wal_time_ = 0;
 	complete_memtable_time_ = 0;
 	block_read_time_ = 0;

@@ -3,8 +3,6 @@
 #include "cmath"
 #include <sys/vfs.h>
 #include <memory>
-#include "rocksdb/table.h"
-#include "rocksdb/flush_block_policy.h"
 
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 void PrintWorkload(const char* filename);
@@ -13,7 +11,6 @@ void* run_test(void* args) {
 	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
 	// rocksdb_client->SetAffinity(rocksdb_client->id_);
 	rocksdb_client->Load();
-	std::this_thread::sleep_for(std::chrono::seconds(5));
 	rocksdb_client->Warmup();
 	rocksdb_client->Work();
 	return NULL;
@@ -23,21 +20,21 @@ int main(const int argc, const char *argv[]){
 	utils::Properties props;
 	ParseCommandLine(argc, argv, props);
 
-	ycsbc::CoreWorkload wl;
-	wl.Init(props);
-	ycsbc::WorkloadProxy wp(&wl);
+//	ycsbc::CoreWorkload wl;
+//	wl.Init(props);
+//	ycsbc::WorkloadProxy wp(&wl);
 
-	const int client_num = stoi(props.GetProperty("client_num"));
+	const int client_num = stoi(props.GetProperty("client_num")); // 1 for each instance
 	const uint64_t load_num = stoull(props[ycsbc::CoreWorkload::RECORD_COUNT_PROPERTY]);
 	const uint64_t requests_num = stoull(props[ycsbc::CoreWorkload::OPERATION_COUNT_PROPERTY]);
-	const std::string log_dir = props.GetProperty("log_dir");
-	const std::string data_dir = props.GetProperty("data_dir");
-	const int is_load = stoi(props.GetProperty("is_load"));
-	const std::string dbname = props.GetProperty("dbname");
-	const std::string db_bak = props.GetProperty("db_bak");
-	const std::string config_path = props.GetProperty("config_path");
-	const std::string bdev_name = props.GetProperty("bdev_name");
-	const int num_instance = stoi(props.GetProperty("num_instance"));
+	//const std::string log_dir = props.GetProperty("log_dir"); // no use
+	//const std::string data_dir = props.GetProperty("data_dir"); // no use
+	//const int is_load = stoi(props.GetProperty("is_load")); // always load
+	//const std::string dbname = props.GetProperty("dbname"); // no use
+	//const std::string db_bak = props.GetProperty("db_bak"); // no use
+	const std::string config_path = props.GetProperty("config_path"); // important
+	const std::string bdev_name = props.GetProperty("bdev_name"); // important
+	const int num_instance = stoi(props.GetProperty("num_instance")); // 2 should be sufficient
 
 	ycsbc::CoreWorkload instance_wls[num_instance];
 	ycsbc::WorkloadProxy* instance_wps[num_instance];
@@ -47,78 +44,78 @@ int main(const int argc, const char *argv[]){
 		instance_wps[i] = new ycsbc::WorkloadProxy(&instance_wls[i]);
 	}
 	//===================common-setting==========
-	auto cache = rocksdb::NewLRUCache(1 * 1024 * 1024 * 1024);
-	rocksdb::BlockBasedTableOptions bbt_opts;
-	bbt_opts.block_size = 32 * 1024;
-	bbt_opts.block_cache = cache;
-	bbt_opts.flush_block_policy_factory.reset(new rocksdb::FlushBlockBySizePolicyFactory());
+//	auto cache = rocksdb::NewLRUCache(1 * 1024 * 1024 * 1024);
+//	rocksdb::BlockBasedTableOptions bbt_opts;
+//	bbt_opts.block_size = 32 * 1024;
+//	bbt_opts.block_cache = cache;
+//	bbt_opts.flush_block_policy_factory.reset(new rocksdb::FlushBlockBySizePolicyFactory());
 	
-	rocksdb::Options options;
-	rocksdb::WriteOptions write_options;
-	rocksdb::ReadOptions read_options;
-	options.table_factory.reset(NewBlockBasedTableFactory(bbt_opts));
-	options.allow_concurrent_memtable_write = true;
-	options.recycle_log_file_num = false;
-	options.allow_2pc = false;
-	options.compression = rocksdb::kNoCompression;
-	options.max_open_files = 500000;
-	options.wal_dir = log_dir;
-	options.bytes_per_sync = 128 * 1024;
-	write_options.sync = true;
-	write_options.disableWAL = false;
-	if(is_load == 1){
-		// write_options.sync = false;
-		// write_options.disableWAL = true;
-		options.error_if_exists = false;
-		options.create_if_missing = true;
-	}else{
-		options.error_if_exists = false;
-		options.create_if_missing = false;
-	}
-	options.statistics = rocksdb::CreateDBStatistics();
-	options.max_total_wal_size =  1 * (1ull << 25); // wal size
-	options.write_buffer_size = 1 * (1ull << 25);   // write buffer size
-	std::string db = data_dir; //"/users/kyleshu/data";
+//	rocksdb::Options options;
+//	rocksdb::WriteOptions write_options;
+//	rocksdb::ReadOptions read_options;
+//	options.table_factory.reset(NewBlockBasedTableFactory(bbt_opts));
+//	options.allow_concurrent_memtable_write = true;
+//	options.recycle_log_file_num = false;
+//	options.allow_2pc = false;
+//	options.compression = rocksdb::kNoCompression;
+//	options.max_open_files = 500000;
+//	options.wal_dir = log_dir;
+//	options.bytes_per_sync = 128 * 1024;
+//	write_options.sync = true;
+//	write_options.disableWAL = false;
+//	if(is_load == 1){
+//		// write_options.sync = false;
+//		// write_options.disableWAL = true;
+//		options.error_if_exists = false;
+//		options.create_if_missing = true;
+//	}else{
+//		options.error_if_exists = false;
+//		options.create_if_missing = false;
+//	}
+//	options.statistics = rocksdb::CreateDBStatistics();
+//	options.max_total_wal_size =  1 * (1ull << 25); // wal size
+//	options.write_buffer_size = 1 * (1ull << 25);   // write buffer size
+//	std::string db = data_dir; //"/users/kyleshu/data";
 
 	// std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";
 	// std::string spdk_bdev = "Nvme0n1";
 	std::string spdk_name = config_path; //"/users/kyleshu/git/dRaid/raid_config/raid5.json";
 	std::string spdk_bdev = bdev_name; //"Raid0";
-	auto env = rocksdb::NewSpdkEnv(rocksdb::Env::Default(), db, spdk_name, spdk_bdev, 4096);
-	options.env = env;
-	/*options.auto_config = true;
-	options.dynamic_moving = true;
-	if(dbname == "spandb" && !options.auto_config){
-		env->SetBgThreadCores(2, rocksdb::Env::HIGH);
-		env->SetBgThreadCores(6, rocksdb::Env::LOW);
-	}*/
-	env->SetBackgroundThreads(2, rocksdb::Env::HIGH);
-	env->SetBackgroundThreads(6, rocksdb::Env::LOW);
-	options.max_background_jobs = 8;
-	options.max_subcompactions = 4;
-	options.max_write_buffer_number = 4;
-	// options.topfs_cache_size = 90; //20GB
+	auto db = new rocksdb::KVStore(config_path, bdev_name);
+//	options.env = env;
+//	/*options.auto_config = true;
+//	options.dynamic_moving = true;
+//	if(dbname == "spandb" && !options.auto_config){
+//		env->SetBgThreadCores(2, rocksdb::Env::HIGH);
+//		env->SetBgThreadCores(6, rocksdb::Env::LOW);
+//	}*/
+//	env->SetBackgroundThreads(2, rocksdb::Env::HIGH);
+//	env->SetBackgroundThreads(6, rocksdb::Env::LOW);
+//	options.max_background_jobs = 8;
+//	options.max_subcompactions = 4;
+//	options.max_write_buffer_number = 4;
+//	// options.topfs_cache_size = 90; //20GB
 
-	if(is_load == 0 || is_load == 1){
-		printf("empty the existing data folder\n");
-		for(int i = 0; i < num_instance; ++i)
-			system(("rm " + data_dir + "/instance" + std::to_string(i) + "/*").c_str());
-	}
-	
-	if(dbname == "rocksdb"){
-		printf("empty the existing log folder\n");
-		for(int i = 0; i < num_instance; ++i)
-			system(("rm " + log_dir + "/instance" + std::to_string(i) + "/*").c_str());
-	}
-	if(is_load == 0){
-		printf("loading database from %s to %s \n", db_bak.c_str(), data_dir.c_str());
-		system(("cp " + db_bak + "/*" + " " + data_dir + "/").c_str());
-		printf("loading finished\n");
-	}
+//	if(is_load == 0 || is_load == 1){
+//		printf("empty the existing data folder\n");
+//		for(int i = 0; i < num_instance; ++i)
+//			system(("rm " + data_dir + "/instance" + std::to_string(i) + "/*").c_str());
+//	}
+//
+//	if(dbname == "rocksdb"){
+//		printf("empty the existing log folder\n");
+//		for(int i = 0; i < num_instance; ++i)
+//			system(("rm " + log_dir + "/instance" + std::to_string(i) + "/*").c_str());
+//	}
+//	if(is_load == 0){
+//		printf("loading database from %s to %s \n", db_bak.c_str(), data_dir.c_str());
+//		system(("cp " + db_bak + "/*" + " " + data_dir + "/").c_str());
+//		printf("loading finished\n");
+//	}
 
   	//===================DB=======================================
-  	printf("dbname: %s\n", dbname.c_str());
-  	const int async_num = 50;
+//  	printf("dbname: %s\n", dbname.c_str());
+//  	const int async_num = 50;
 /*	if(dbname == "rocksdb"){
 		options.auto_config = false;
 	}else if(dbname == "spandb"){
@@ -149,20 +146,19 @@ int main(const int argc, const char *argv[]){
 	}
 */
 	pthread_t client_thread[num_instance];
-	system("sync;echo 3 > /proc/sys/vm/drop_caches");
-	fflush(stdout);
-	printf("--------------memory usage----------------\n");
-	fflush(stdout);
-	system("free -h");
-	fflush(stdout);
-	printf("------------------------------------------\n");
-	fflush(stdout);
+//	system("sync;echo 3 > /proc/sys/vm/drop_caches");
+//	fflush(stdout);
+//	printf("--------------memory usage----------------\n");
+//	fflush(stdout);
+//	system("free -h");
+//	fflush(stdout);
+//	printf("------------------------------------------\n");
+//	fflush(stdout);
 	for(int i = 0; i < num_instance; ++i) {
 		printf("instance %d\n",i);
-		rocksdb::Options instance_options(options);
-		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
-		clients[i] = new ycsbc::RocksDBClient(instance_wps[i], instance_options, write_options, read_options, data_dir+"/instance"+std::to_string(i), client_num,
-					  load_num, client_num, requests_num, async_num, is_load, i);
+//		rocksdb::Options instance_options(options);
+//		instance_options.wal_dir = log_dir + "/instance" + std::to_string(i);
+		clients[i] = new ycsbc::RocksDBClient(instance_wps[i], client_num, load_num, client_num, requests_num, i, db); // TODO: only take instance_wps[i], bdev wrapper, range of space, client_num, load_num, requests_num as input
 		pthread_create(&client_thread[i], NULL, run_test, clients[i]);
 	}
 
@@ -201,11 +197,11 @@ void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
 	input.close();
 	PrintWorkload(argv[1]);
 	props.SetProperty("client_num", argv[2]);
-	props.SetProperty("data_dir", argv[3]);
-	props.SetProperty("log_dir", argv[4]);
-	props.SetProperty("is_load", argv[5]);
-	props.SetProperty("dbname", argv[6]);
-	props.SetProperty("db_bak", argv[7]);
+	//props.SetProperty("data_dir", argv[3]);
+	//props.SetProperty("log_dir", argv[4]);
+	//props.SetProperty("is_load", argv[5]);
+	//props.SetProperty("dbname", argv[6]);
+	//props.SetProperty("db_bak", argv[7]);
 	props.SetProperty("config_path", argv[8]);
 	props.SetProperty("bdev_name", argv[9]);
 	props.SetProperty("num_instance", argv[10]);

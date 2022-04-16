@@ -1,17 +1,5 @@
 #pragma once
 
-#include "rocksdb/db.h"
-#include "rocksdb/table.h"
-#include "rocksdb/options.h"
-#include "rocksdb/utilities/options_util.h"
-#include "rocksdb/utilities/transaction_db.h"
-#include "rocksdb/iostats_context.h"
-#include "rocksdb/perf_context.h"
-#include "rocksdb/utilities/transaction.h"
-#include "rocksdb/merge_operator.h"
-#include "rocksdb/slice.h"
-#include "rocksdb/metadata.h"
-
 #include "thread"
 #include "sys/mman.h"
 #include "sys/syscall.h"
@@ -35,10 +23,6 @@ typedef std::chrono::high_resolution_clock::time_point TimePoint;
 	#define UNLIKELY(x) (x)
 #endif
 
-#define ERR(expr) do{rocksdb::Status ec = (expr); if(!ec.ok()) fprintf(stderr,  \
-    "%s:%d: %s: %s\n", __FILE__, __LINE__, #expr, ec.ToString().c_str()), assert(false);}while(0)
-
-
 inline void *AllocBuffer(size_t capacity){
     void *buffer = mmap(nullptr, capacity, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
     assert(buffer != MAP_FAILED);
@@ -52,19 +36,13 @@ inline void DeallocBuffer(void *buffer, size_t capacity){
 class RocksDBClient{
 	public:
 		WorkloadProxy *workload_proxy_;
-		rocksdb::DB* db_ = nullptr;
-		const rocksdb::Options options_;
-		const rocksdb::WriteOptions write_options_;
-		const rocksdb::ReadOptions read_options_;
-
-		const std::string data_dir_;
+		KVStore* db_;
 
 		const int loader_threads_;
 		const uint64_t load_num_;
 		const int worker_threads_;
 		const uint64_t request_num_;
 		double tput_;
-		const int async_num_;
 		const double warmup_rate_ = 0.3;
 
 		WorkloadWrapper *workload_wrapper_ = nullptr;
@@ -145,49 +123,27 @@ class RocksDBClient{
 
 		TimeRecord *insert_failed_ = nullptr;
 
-		std::vector<rocksdb::LiveFileMetaData>  GetMetadata(std::string dir){
-			rocksdb::DB* db;
-			rocksdb::Options options;
-			ERR(rocksdb::DB::Open(options, dir, &db));
-			std::vector<rocksdb::LiveFileMetaData> metadata;
-			db->GetLiveFilesMetaData(&metadata);
-			delete db;
-			return metadata;
-		}
-
 	public:
 		int id_;
-		RocksDBClient(WorkloadProxy *workload_proxy, rocksdb::Options options, rocksdb::WriteOptions write_options,
-					  rocksdb::ReadOptions read_options, std::string data_dir, int loader_threads,
-					  uint64_t load_num, int worker_threads, uint64_t request_num, int async_num, int open_mod, int id):
+		RocksDBClient(WorkloadProxy *workload_proxy, int loader_threads, uint64_t load_num, int worker_threads,
+                      uint64_t request_num, int id, KVStore* db):
 				workload_proxy_(workload_proxy),
-				options_(options),
-				write_options_(write_options),
-				read_options_(read_options),
-				data_dir_(data_dir),
+				db_(db),
 				loader_threads_(loader_threads),
 				load_num_(load_num),
 				worker_threads_(worker_threads),
 				request_num_(request_num),
-				async_num_(async_num),
 				total_finished_requests_(0),
 				total_write_latency(0),
 				total_read_latency(0),
 				write_finished(0),
 				read_finished(0),
 				id_(id){
-			rocksdb::Status s = rocksdb::DB::Open(options_, data_dir_, &db_);
-			if(!s.ok()){
-				printf("%s\n", s.ToString().c_str());
-				exit(0);
-			}
 			Reset();
 			fflush(stdout);	
 		}
 
 		~RocksDBClient(){
-			if(db_ != nullptr)
-				delete db_;
 			if(request_time_ != nullptr)
 				delete request_time_;
 			if(read_time_ != nullptr)
@@ -234,7 +190,6 @@ class RocksDBClient{
 		}
 
 		void RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master);
-		void SpanDBWorker(uint64_t num, int coreid, bool is_warmup, bool is_master);
 		void RocksdDBLoader(uint64_t num, int coreid);
 		void Reset();
 		void PrintArgs();

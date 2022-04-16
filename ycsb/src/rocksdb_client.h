@@ -8,6 +8,7 @@
 #include "workloadwrapper.h"
 
 #include <sys/time.h>
+#include <cstring>
 
 namespace ycsbc{
 

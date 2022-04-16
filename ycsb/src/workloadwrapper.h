@@ -3,6 +3,7 @@
 #include "core/workload_proxy.h"
 #include "core/core_workload.h"
 #include "chrono"
+#include <functional>
 
 namespace ycsbc{
 

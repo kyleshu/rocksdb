@@ -178,14 +178,14 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 		WorkloadWrapper::Request *req = workload_wrapper_->GetNextRequest();
 		ycsbc::Operation opt = req->Type();
 		assert(req != nullptr);
-		uint64_t offset;
-		offset = hashMap.find(req->Key())->second;
 		auto start = TIME_NOW;
+		uint64_t offset;
 		if(opt == READ){
+			offset = hashMap.find(req->Key())->second;
 			db_->Read(r_value, offset, 256);
 			// db_->Get(read_options_, req->Key(), &r_value);
 		}else if(opt == UPDATE){
-			// offset = hashMap.find(req->Key())->second;
+			offset = hashMap.find(req->Key())->second;
 			db_->Write(w_value, offset, 256);
 			// ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
 		}

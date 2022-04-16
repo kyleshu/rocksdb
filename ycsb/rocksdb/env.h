@@ -1680,9 +1680,9 @@ public:
 
     virtual void Read(void* dst, uint64_t offset, uint64_t length);
 
-    KVStore(const std::string &conf, const std::string &bdev_name);
+    KVStore(const std::string &conf, const std::string &bdev_name) {}
 
-    virtual ~KVStore();
+    virtual ~KVStore() {}
 };
 
 KVStore* NewSpdkKVStore(const std::string &conf, const std::string &bdev_name);

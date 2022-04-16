@@ -1683,7 +1683,7 @@ public:
 
     virtual void Read(void* dst, uint64_t offset, uint64_t length);
 
-    KVStore(const std::string &_conf, const std::string &_bdev_name):conf(conf), bdev_name(_bdev_name) {}
+    KVStore(const std::string &_conf, const std::string &_bdev_name):conf(_conf), bdev_name(_bdev_name) {}
 
     virtual ~KVStore() {}
 };

@@ -77,7 +77,7 @@ void RocksDBClient::Work(){
 	for(int i=0; i<worker_threads_; i++){
 		if(i == worker_threads_ - 1)
 			num = num + request_num_ % worker_threads_;
-		threads.emplace_back(fn, num, (base_coreid + worker_threads_ * id_ + i), false, i==0);
+		threads.emplace_back(fn, num, (base_coreid + worker_threads_ * id_ + i), false, i==0, i);
 	}
 	for(auto &t : threads)
 		t.join();

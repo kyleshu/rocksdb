@@ -172,7 +172,7 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 		ycsbc::Operation opt = req->Type();
 		assert(req != nullptr);
 		auto start = TIME_NOW;
-		uint64_t offset = random() % (1 << 21);
+		uint64_t offset = rand() % (1 << 21);
 		if(opt == READ){
 			// db_->Get(read_options_, req->Key(), &r_value);
 			db_->Read(r_value, offset, 256);
@@ -228,7 +228,7 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 void RocksDBClient::RocksdDBLoader(uint64_t num, int coreid){
 	char w_value[128 * 1024];
 	for(uint64_t i=0; i<num; i++){
-		uint64_t offset = random() % (1 << 21);
+		uint64_t offset = rand() % (1 << 21);
 		db_->Write(w_value, offset, 256);
 		// std::string table;
 		// std::string key;

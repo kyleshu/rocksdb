@@ -49,7 +49,7 @@ inline void DeallocBuffer(void *buffer, size_t capacity){
 class RocksDBClient{
 	public:
 		WorkloadProxy *workload_proxy_;
-		KVStore* db_;
+		rocksdb::KVStore* db_;
 
 		const int loader_threads_;
 		const uint64_t load_num_;
@@ -139,7 +139,7 @@ class RocksDBClient{
 	public:
 		int id_;
 		RocksDBClient(WorkloadProxy *workload_proxy, int loader_threads, uint64_t load_num, int worker_threads,
-                      uint64_t request_num, int id, KVStore* db):
+                      uint64_t request_num, int id, rocksdb::KVStore* db):
 				workload_proxy_(workload_proxy),
 				db_(db),
 				loader_threads_(loader_threads),

@@ -1672,4 +1672,17 @@ Env* NewSpdkEnv(Env* base_env, const std::string& fsname, const std::string& con
 // Initializes a thread for SpdkEnv processing.
 void SpdkInitializeThread(void);
 
+
+class KVStore {
+public:
+
+    virtual void Write(void* src, uint64_t offset, uint64_t length);
+
+    virtual void Read(void* dst, uint64_t offset, uint64_t length);
+
+    KVStore(const std::string &conf, const std::string &bdev_name);
+};
+
+KVStore* NewSpdkKVStore(const std::string &conf, const std::string &bdev_name);
+
 }  // namespace ROCKSDB_NAMESPACE

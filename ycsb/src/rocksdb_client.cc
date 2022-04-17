@@ -190,7 +190,7 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 			// ERR(db_->Put(write_options_, req->Key(), /*std::string(req->Length(), 'a')*/ w_value));
 		}
 		else if(opt == INSERT){
-			offset = rand() % (1 << 21);
+			offset = (rand() % (1 << 21)) & (~0xff);
 			pthread_spin_lock(&lock);
 			hashMap.insert(std::pair<std::string, uint64_t>(req->Key(), offset));
 			pthread_spin_unlock(&lock);
@@ -245,7 +245,7 @@ void RocksDBClient::RocksDBWorker(uint64_t num, int coreid, bool is_warmup, bool
 void RocksDBClient::RocksdDBLoader(uint64_t num, int coreid, int id){
 	char w_value[128 * 1024];
 	for(uint64_t i=0; i<num; i++){
-		uint64_t offset = rand() % (1 << 21);
+		uint64_t offset = (rand() % (1 << 21)) & (~0xff);
 		std::string table;
 		std::string key;
 		std::vector<ycsbc::CoreWorkload::KVPair> values;

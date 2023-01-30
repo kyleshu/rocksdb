@@ -9,6 +9,8 @@
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props);
 void PrintWorkload(const char* filename);
 
+static int wal_offset = 25;
+
 void* run_test(void* args) {
 	ycsbc::RocksDBClient* rocksdb_client = (ycsbc::RocksDBClient*) args;
 	// rocksdb_client->SetAffinity(rocksdb_client->id_);
@@ -76,7 +78,7 @@ int main(const int argc, const char *argv[]){
 		options.create_if_missing = false;
 	}
 	options.statistics = rocksdb::CreateDBStatistics();
-	options.max_total_wal_size =  1 * (1ull << 25); // wal size
+	options.max_total_wal_size =  1 * (1ull << wal_offset); // wal size
 	options.write_buffer_size = 1 * (1ull << 25);   // write buffer size
 	std::string db = data_dir; //"/users/kyleshu/data";
 
@@ -186,7 +188,7 @@ int main(const int argc, const char *argv[]){
 }
 
 void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
-	if(argc != 11){
+	if(argc < 11){
 		printf("usage: <workload_file> <client_num> <data_dir> <log_dir> <is_load> <dbname> <db_bak> <config_path> <bdev_name> <num_instace>\n");
 		exit(0);
 	}
@@ -209,6 +211,7 @@ void ParseCommandLine(int argc, const char *argv[], utils::Properties &props) {
 	props.SetProperty("config_path", argv[8]);
 	props.SetProperty("bdev_name", argv[9]);
 	props.SetProperty("num_instance", argv[10]);
+	if(argc > 11) wal_offset = atoi(argv[11]);
 }
 
 void PrintWorkload(const char* filename){

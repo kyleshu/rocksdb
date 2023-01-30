@@ -22,8 +22,16 @@ MACHINE ?= $(shell uname -m)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
-LIBS = -lerpc -lpthread -lnuma -ldl
-LDFLAGS += -Wl,-whole-archive /users/kyleshu/git/dRaid/src/rpcDRaid/bdev_raid_rpc.a -L /users/kyleshu/git/eRPC/build -Wl,--no-whole-archive -lerpc
+include src.mk
+SPDK_DIR ?= ../spdk
+SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
+
+ifeq ($(SPDK_DIR), ../draid-spdk)
+	LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
+endif
+
+LIBS = -lpthread -lnuma -ldl
+
 
 # Transform parallel LOG output into something more readable.
 perl_command = perl -n \
@@ -213,9 +221,9 @@ ifeq ($(USE_LTO), 1)
 endif
 
 #-----------------------------------------------
-include src.mk
-SPDK_DIR ?= ../spdk
-SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
+# include src.mk
+# SPDK_DIR ?= ../spdk
+# SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
 
 AM_DEFAULT_VERBOSITY ?= 0
 

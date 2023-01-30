@@ -22,8 +22,8 @@ MACHINE ?= $(shell uname -m)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
-LIBS = -lerpc -lpthread -lnuma -ldl
-LDFLAGS += -Wl,-whole-archive /users/kyleshu/git/dRaid/src/rpcDRaid/bdev_raid_rpc.a -L /users/kyleshu/git/eRPC/build -Wl,--no-whole-archive -lerpc
+LIBS = -lpthread -lnuma -ldl
+LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
 
 # Transform parallel LOG output into something more readable.
 perl_command = perl -n \
@@ -1364,7 +1364,7 @@ librocksdb_env_basic_test.a: $(OBJ_DIR)/env/env_basic_test.o $(LIB_OBJECTS) $(TE
 	$(AM_V_AR)rm -f $@
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ $^
 
-db_bench: $(OBJ_DIR)/tools/db_bench.o $(BENCH_OBJECTS) $(TESTUTIL) $(LIBRARY) /users/kyleshu/git/dRaid/src/rpcDRaid/bdev_raid_rpc.a
+db_bench: $(OBJ_DIR)/tools/db_bench.o $(BENCH_OBJECTS) $(TESTUTIL) $(LIBRARY) /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
 	$(AM_LINK)
 
 trace_analyzer: $(OBJ_DIR)/tools/trace_analyzer.o $(ANALYZE_OBJECTS) $(TOOLS_LIBRARY) $(LIBRARY)

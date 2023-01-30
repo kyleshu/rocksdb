@@ -22,8 +22,16 @@ MACHINE ?= $(shell uname -m)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
+include src.mk
+SPDK_DIR ?= ../spdk
+SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
+
+ifeq ($(SPDK_DIR), ../draid-spdk)
+	LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
+endif
+
 LIBS = -lpthread -lnuma -ldl
-LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
+# LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
 
 # Transform parallel LOG output into something more readable.
 perl_command = perl -n \
@@ -213,9 +221,9 @@ ifeq ($(USE_LTO), 1)
 endif
 
 #-----------------------------------------------
-include src.mk
-SPDK_DIR ?= ../spdk
-SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
+# include src.mk
+# SPDK_DIR ?= ../spdk
+# SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
 
 AM_DEFAULT_VERBOSITY ?= 0
 
@@ -1364,7 +1372,7 @@ librocksdb_env_basic_test.a: $(OBJ_DIR)/env/env_basic_test.o $(LIB_OBJECTS) $(TE
 	$(AM_V_AR)rm -f $@
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ $^
 
-db_bench: $(OBJ_DIR)/tools/db_bench.o $(BENCH_OBJECTS) $(TESTUTIL) $(LIBRARY) /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
+db_bench: $(OBJ_DIR)/tools/db_bench.o $(BENCH_OBJECTS) $(TESTUTIL) $(LIBRARY)
 	$(AM_LINK)
 
 trace_analyzer: $(OBJ_DIR)/tools/trace_analyzer.o $(ANALYZE_OBJECTS) $(TOOLS_LIBRARY) $(LIBRARY)

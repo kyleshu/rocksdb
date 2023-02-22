@@ -19,6 +19,7 @@ CFLAGS += ${EXTRA_CFLAGS}
 CXXFLAGS += ${EXTRA_CXXFLAGS}
 LDFLAGS += $(EXTRA_LDFLAGS)
 MACHINE ?= $(shell uname -m)
+USER = $(shell whoami)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
@@ -27,11 +28,10 @@ SPDK_DIR ?= ../spdk
 SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
 
 ifeq ($(SPDK_DIR), ../draid-spdk)
-	LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
+	LDFLAGS += -Wl,-whole-archive /users/$(USER)/dRAID/dRAID/host/bdev_raid_rpc.a
 endif
 
 LIBS = -lpthread -lnuma -ldl
-# LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
 
 # Transform parallel LOG output into something more readable.
 perl_command = perl -n \

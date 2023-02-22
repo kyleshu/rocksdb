@@ -75,12 +75,9 @@ int main(const int argc, const char *argv[]){
 //	options.statistics = rocksdb::CreateDBStatistics();
 //	options.max_total_wal_size =  1 * (1ull << 25); // wal size
 //	options.write_buffer_size = 1 * (1ull << 25);   // write buffer size
-//	std::string db = data_dir; //"/users/kyleshu/data";
 
-	// std::string spdk_name = "/users/kyleshu/git/dRaid/src/rocksdb/rocksdb.json";
-	// std::string spdk_bdev = "Nvme0n1";
-	std::string spdk_name = config_path; //"/users/kyleshu/git/dRaid/raid_config/raid5.json";
-	std::string spdk_bdev = bdev_name; //"Raid0";
+	std::string spdk_name = config_path;
+	std::string spdk_bdev = bdev_name;
 	auto db = rocksdb::NewSpdkKVStore(config_path, bdev_name);
 //	options.env = env;
 //	/*options.auto_config = true;

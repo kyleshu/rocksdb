@@ -19,6 +19,7 @@ CFLAGS += ${EXTRA_CFLAGS}
 CXXFLAGS += ${EXTRA_CXXFLAGS}
 LDFLAGS += $(EXTRA_LDFLAGS)
 MACHINE ?= $(shell uname -m)
+USER = $(shell whoami)
 ARFLAGS = ${EXTRA_ARFLAGS} rs
 STRIPFLAGS = -S -x
 
@@ -27,7 +28,7 @@ SPDK_DIR ?= ../spdk
 SPDK_ROOT_DIR := $(abspath $(SPDK_DIR))
 
 ifeq ($(SPDK_DIR), ../draid-spdk)
-	LDFLAGS += -Wl,-whole-archive /users/kyleshu/dRAID/dRAID/host/bdev_raid_rpc.a
+	LDFLAGS += -Wl,-whole-archive /users/$(USER)/dRAID/dRAID/host/bdev_raid_rpc.a
 endif
 
 LIBS = -lpthread -lnuma -ldl
@@ -1372,7 +1373,7 @@ librocksdb_env_basic_test.a: $(OBJ_DIR)/env/env_basic_test.o $(LIB_OBJECTS) $(TE
 	$(AM_V_AR)rm -f $@
 	$(AM_V_at)$(AR) $(ARFLAGS) $@ $^
 
-db_bench: $(OBJ_DIR)/tools/db_bench.o $(BENCH_OBJECTS) $(TESTUTIL) $(LIBRARY) /users/kyleshu/git/dRaid/src/rpcDRaid/bdev_raid_rpc.a
+db_bench: $(OBJ_DIR)/tools/db_bench.o $(BENCH_OBJECTS) $(TESTUTIL) $(LIBRARY)
 	$(AM_LINK)
 
 trace_analyzer: $(OBJ_DIR)/tools/trace_analyzer.o $(ANALYZE_OBJECTS) $(TOOLS_LIBRARY) $(LIBRARY)
